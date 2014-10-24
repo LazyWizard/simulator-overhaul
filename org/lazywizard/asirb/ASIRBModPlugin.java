@@ -19,7 +19,7 @@ public class ASIRBModPlugin extends BaseModPlugin
             @Override
             public void reportPlayerEngagement(EngagementResultAPI result)
             {
-                System.out.println("Engagement found");
+                //System.out.println("Engagement found");
                 final List<DeployedFleetMemberAPI> seenShips
                         = result.getLoserResult().getAllEverDeployedCopy();
                 // TODO: Remove check after next hotfix

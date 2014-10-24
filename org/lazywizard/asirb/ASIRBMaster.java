@@ -7,6 +7,7 @@ import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
+import com.fs.starfarer.api.loading.VariantSource;
 
 public class ASIRBMaster
 {
@@ -15,10 +16,15 @@ public class ASIRBMaster
 
     public static boolean addOpponent(ShipAPI opponent)
     {
+        if (opponent.getVariant().getSource() != VariantSource.STOCK)
+        {
+            return false;
+        }
+
         Set<String> known = (opponent.isFighter() ? getAllKnownWings() : getAllKnownShips());
         String id = (opponent.isFighter() ? opponent.getWing().getWingId()
                 : opponent.getVariant().getHullVariantId());
-        System.out.println(" ASIRB: adding " + id);
+        //System.out.println(" ASIRB: adding " + id);
         return known.add(id);
     }
 

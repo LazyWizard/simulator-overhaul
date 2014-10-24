@@ -17,8 +17,9 @@ import org.apache.log4j.Level;
 
 public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
 {
-    private static final float TIME_BETWEEN_CHECKS = 1f;
-    private static final Comparator<FleetMemberAPI> sortByHullSize = new SortByHullSize();
+    // TODO: Switch to 1f after next hotfix
+    private static final float TIME_BETWEEN_CHECKS = 0f; // 1f;
+    private static final SortByHullSize sortByHullSize = new SortByHullSize();
     private float nextCheck = TIME_BETWEEN_CHECKS;
     private int reservesSize = -1;
 

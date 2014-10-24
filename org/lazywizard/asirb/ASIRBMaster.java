@@ -8,6 +8,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.loading.VariantSource;
+import org.apache.log4j.Level;
 
 public class ASIRBMaster
 {
@@ -24,8 +25,19 @@ public class ASIRBMaster
         Set<String> known = (opponent.isFighter() ? getAllKnownWings() : getAllKnownShips());
         String id = (opponent.isFighter() ? opponent.getWing().getWingId()
                 : opponent.getVariant().getHullVariantId());
-        //System.out.println(" ASIRB: adding " + id);
+        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                "Adding " + id + " to known ships");
         return known.add(id);
+    }
+
+    public static void removeKnownShip(String variantId)
+    {
+        getAllKnownShips().remove(variantId);
+    }
+
+    public static void removeKnownWing(String wingId)
+    {
+        getAllKnownWings().remove(wingId);
     }
 
     public static Set<String> getAllKnownShips()
@@ -44,6 +56,8 @@ public class ASIRBMaster
 
         if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
+            Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                    "Creating default ship list");
             Set<String> tmp = new LinkedHashSet<>();
             tmp.add("hound_Standard");
             persistentData.put(KNOWN_SHIPS_PDATA_ID, tmp);
@@ -69,6 +83,8 @@ public class ASIRBMaster
 
         if (!persistentData.containsKey(KNOWN_WINGS_PDATA_ID))
         {
+            Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                    "Creating default wing list");
             Set<String> tmp = new LinkedHashSet<>();
             tmp.add("talon_wing");
             persistentData.put(KNOWN_WINGS_PDATA_ID, tmp);
@@ -76,5 +92,9 @@ public class ASIRBMaster
         }
 
         return (Set<String>) persistentData.get(KNOWN_WINGS_PDATA_ID);
+    }
+
+    private ASIRBMaster()
+    {
     }
 }

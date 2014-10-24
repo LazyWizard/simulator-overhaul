@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.combat.BaseEveryFrameCombatPlugin;
 import com.fs.starfarer.api.combat.CombatEngineAPI;
@@ -17,59 +16,65 @@ import org.apache.log4j.Level;
 
 public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
 {
-    // TODO: Switch to 1f after next hotfix
-    private static final float TIME_BETWEEN_CHECKS = 0f; // 1f;
+    private static final float TIME_BETWEEN_CHECKS = 1f;
     private static final SortByHullSize sortByHullSize = new SortByHullSize();
-    private float nextCheck = TIME_BETWEEN_CHECKS;
+    private float nextCheck = 0f;
     private int reservesSize = -1;
 
     private void checkAvailableShips()
     {
-        //System.out.println("Checking ships");
+        Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG, "Checking ships");
 
-        Set<String> toAdd = ASIRBMaster.getAllKnownShips();
         List<FleetMemberAPI> newReserves = new ArrayList<>();
         FleetMemberAPI tmp;
-        for (String id : toAdd)
+        // Add all known ship variants to sim list
+        for (String variantId : ASIRBMaster.getAllKnownShips())
         {
             try
             {
                 tmp = Global.getFactory().createFleetMember(
-                        FleetMemberType.SHIP, id);
+                        FleetMemberType.SHIP, variantId);
             }
             catch (Exception ex)
             {
                 Global.getLogger(ASIRBPlugin.class).log(Level.ERROR,
-                        "Failed to create ship " + id, ex);
+                        "Failed to create ship " + variantId, ex);
+                ASIRBMaster.removeKnownShip(variantId);
                 continue;
             }
 
+            // Set as enemy with regular crew
             tmp.getRepairTracker().setCR(.6f);
             tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
             tmp.setOwner(1);
-            //System.out.println("Added " + tmp.getHullId() + " at CR "
-            //        + tmp.getRepairTracker().getCR() + ", crew " + tmp.getCrewFraction());
+            Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG, "Added ship "
+                    + tmp.getHullId() + " at CR " + tmp.getRepairTracker().getCR()
+                    + ", crew " + tmp.getCrewFraction());
             newReserves.add(tmp);
         }
-        for (String id : ASIRBMaster.getAllKnownWings())
+        // Add all known fighter wings to sim list
+        for (String wingId : ASIRBMaster.getAllKnownWings())
         {
             try
             {
                 tmp = Global.getFactory().createFleetMember(
-                        FleetMemberType.FIGHTER_WING, id);
+                        FleetMemberType.FIGHTER_WING, wingId);
             }
             catch (Exception ex)
             {
                 Global.getLogger(ASIRBPlugin.class).log(Level.ERROR,
-                        "Failed to create wing " + id, ex);
+                        "Failed to create wing " + wingId, ex);
+                ASIRBMaster.removeKnownWing(wingId);
                 continue;
             }
 
+            // Set as enemy with regular crew
             tmp.getRepairTracker().setCR(.6f);
             tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
             tmp.setOwner(1);
-            //System.out.println("Added " + tmp.getHullId() + " at CR "
-            //        + tmp.getRepairTracker().getCR() + ", crew " + tmp.getCrewFraction());
+            Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG, "Added wing "
+                    + tmp.getHullId() + " at CR " + tmp.getRepairTracker().getCR()
+                    + ", crew " + tmp.getCrewFraction());
             newReserves.add(tmp);
         }
 
@@ -96,7 +101,8 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
     public void advance(float amount, List<InputEventAPI> events)
     {
         CombatEngineAPI engine = Global.getCombatEngine();
-        if (engine.isInCampaignSim())
+        // TODO: replace after next hotfix
+        if (engine.isSimulation()) //InCampaignSim())
         {
             nextCheck -= amount;
             if (nextCheck <= 0f)
@@ -106,7 +112,8 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
                 if (engine.getFleetManager(FleetSide.ENEMY)
                         .getReservesCopy().size() != reservesSize)
                 {
-                    //System.out.println("Needs re-check!");
+                    Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG,
+                            "Needs re-check!");
                     checkAvailableShips();
                 }
             }
@@ -116,7 +123,8 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
     @Override
     public void init(CombatEngineAPI engine)
     {
-        if (engine.isInCampaignSim())
+        // TODO: Uncomment after next hotfix
+        //if (engine.isInCampaignSim())
         {
             checkAvailableShips();
         }
@@ -127,12 +135,14 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
         @Override
         public int compare(FleetMemberAPI o1, FleetMemberAPI o2)
         {
+            // Sort ships of same hull size by their name
             if (o1.getHullSpec().getHullSize() == o2.getHullSpec().getHullSize())
             {
                 return o1.getVariant().getFullDesignationWithHullName().compareTo(
                         o2.getVariant().getFullDesignationWithHullName());
             }
 
+            // Sort ships by hull size
             return o2.getHullSpec().getHullSize().compareTo(
                     o1.getHullSpec().getHullSize());
         }

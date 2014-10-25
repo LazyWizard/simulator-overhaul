@@ -12,8 +12,7 @@ import org.apache.log4j.Level;
 // TODO: Remove 'replace' tag in mod_info.json after next hotfix
 public class ASIRBModPlugin extends BaseModPlugin
 {
-    // TODO: Set to WARN before release
-    private static final Level LOG_LEVEL = Level.ALL;
+    private static final Level LOG_LEVEL = Level.WARN;
     private static final CampaignEventListener listener;
 
     static

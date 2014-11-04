@@ -15,9 +15,9 @@ public class ASIRBMaster
     private static final String KNOWN_SHIPS_PDATA_ID = "lw_ASIRB_knownships";
     private static final String KNOWN_WINGS_PDATA_ID = "lw_ASIRB_knownwings";
 
-    public static boolean addOpponent(ShipAPI opponent)
+    static boolean checkAddOpponent(ShipAPI opponent)
     {
-        if (opponent.getVariant().getSource() != VariantSource.STOCK)
+        if (opponent == null || opponent.getVariant().getSource() != VariantSource.STOCK)
         {
             return false;
         }
@@ -26,17 +26,21 @@ public class ASIRBMaster
         String id = (opponent.isFighter() ? opponent.getWing().getWingId()
                 : opponent.getVariant().getHullVariantId());
         Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
-                "Adding " + id + " to known ships");
+                "Attempting to add " + id + " to known ships");
         return known.add(id);
     }
 
     public static void removeKnownShip(String variantId)
     {
+        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                "Removing ship " + variantId + " from known ships");
         getAllKnownShips().remove(variantId);
     }
 
     public static void removeKnownWing(String wingId)
     {
+        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                "Removing wing " + wingId + " from known wings");
         getAllKnownWings().remove(wingId);
     }
 

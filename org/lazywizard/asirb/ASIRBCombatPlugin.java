@@ -3,7 +3,9 @@ package org.lazywizard.asirb;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.combat.BaseEveryFrameCombatPlugin;
 import com.fs.starfarer.api.combat.CombatEngineAPI;
@@ -14,21 +16,26 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.mission.FleetSide;
 import org.apache.log4j.Level;
 
-public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
+// TODO: respawn allied ships in campaign simulator list when killed
+// TODO: provide infinite sim opponents in mission simulator
+public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
 {
-    private static final float TIME_BETWEEN_CHECKS = 1f;
-    private static final SortByHullSize sortByHullSize = new SortByHullSize();
+    private static final float TIME_BETWEEN_CHECKS = .25f;
+    // TODO: Make which Comparator this uses a config file option
+    private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
+    private Set<String> playerShips, enemyShips, playerWings, enemyWings;
     private float nextCheck = 0f;
     private int reservesSize = -1;
 
-    private void checkAvailableShips()
+    private void createShipList(FleetSide side,Set<String> shipIds, Set<String> wingIds)
     {
-        Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG, "Checking ships");
+        Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+                "Checking ships for side " + side.name());
 
         List<FleetMemberAPI> newReserves = new ArrayList<>();
         FleetMemberAPI tmp;
         // Add all known ship variants to sim list
-        for (String variantId : ASIRBMaster.getAllKnownShips())
+        for (String variantId : shipIds)
         {
             try
             {
@@ -37,7 +44,7 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
             }
             catch (Exception ex)
             {
-                Global.getLogger(ASIRBPlugin.class).log(Level.ERROR,
+                Global.getLogger(ASIRBCombatPlugin.class).log(Level.ERROR,
                         "Failed to create ship " + variantId, ex);
                 ASIRBMaster.removeKnownShip(variantId);
                 continue;
@@ -46,14 +53,14 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
             // Set as enemy with regular crew
             tmp.getRepairTracker().setCR(.6f);
             tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
-            tmp.setOwner(1);
-            Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG, "Added ship "
-                    + tmp.getHullId() + " at CR " + tmp.getRepairTracker().getCR()
-                    + ", crew " + tmp.getCrewFraction());
+            tmp.setOwner(side.ordinal());
+            Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+                    "Added ship " + tmp.getHullId() + " to side " + side
+                    + " at CR " + tmp.getRepairTracker().getCR());
             newReserves.add(tmp);
         }
         // Add all known fighter wings to sim list
-        for (String wingId : ASIRBMaster.getAllKnownWings())
+        for (String wingId : wingIds)
         {
             try
             {
@@ -62,7 +69,7 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
             }
             catch (Exception ex)
             {
-                Global.getLogger(ASIRBPlugin.class).log(Level.ERROR,
+                Global.getLogger(ASIRBCombatPlugin.class).log(Level.ERROR,
                         "Failed to create wing " + wingId, ex);
                 ASIRBMaster.removeKnownWing(wingId);
                 continue;
@@ -71,15 +78,15 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
             // Set as enemy with regular crew
             tmp.getRepairTracker().setCR(.6f);
             tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
-            tmp.setOwner(1);
-            Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG, "Added wing "
-                    + tmp.getHullId() + " at CR " + tmp.getRepairTracker().getCR()
-                    + ", crew " + tmp.getCrewFraction());
+            tmp.setOwner(side.ordinal());
+            Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+                    "Added wing " + tmp.getHullId() + " to side " + side
+                    + " at CR " + tmp.getRepairTracker().getCR());
             newReserves.add(tmp);
         }
 
-        CombatFleetManagerAPI fm = Global.getCombatEngine().getFleetManager(FleetSide.ENEMY);
-        Collections.sort(newReserves, sortByHullSize);
+        CombatFleetManagerAPI fm = Global.getCombatEngine().getFleetManager(side);
+        Collections.sort(newReserves, comparator);
 
         // Clear existing simulation list
         for (FleetMemberAPI member : fm.getReservesCopy())
@@ -101,8 +108,7 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
     public void advance(float amount, List<InputEventAPI> events)
     {
         CombatEngineAPI engine = Global.getCombatEngine();
-        // TODO: replace after next hotfix
-        if (engine.isSimulation()) //InCampaignSim())
+        if (engine.isSimulation())
         {
             nextCheck -= amount;
             if (nextCheck <= 0f)
@@ -112,9 +118,9 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
                 if (engine.getFleetManager(FleetSide.ENEMY)
                         .getReservesCopy().size() != reservesSize)
                 {
-                    Global.getLogger(ASIRBPlugin.class).log(Level.DEBUG,
+                    Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
                             "Needs re-check!");
-                    checkAvailableShips();
+                    createShipList(FleetSide.ENEMY, enemyShips, enemyWings);
                 }
             }
         }
@@ -123,10 +129,34 @@ public class ASIRBPlugin extends BaseEveryFrameCombatPlugin
     @Override
     public void init(CombatEngineAPI engine)
     {
-        // TODO: Uncomment after next hotfix
-        //if (engine.isInCampaignSim())
+        if (engine.isSimulation())
         {
-            checkAvailableShips();
+            // Remember previously fought opponents in campaign for auto-respawn
+            if (engine.isInCampaignSim())
+            {
+                enemyShips = ASIRBMaster.getAllKnownShips();
+                enemyWings = ASIRBMaster.getAllKnownWings();
+            }
+            else
+            {
+                enemyShips = new LinkedHashSet<>();
+                enemyWings = new LinkedHashSet<>();
+
+                // Remember all sim_opponents.csv opponents in missions for auto-respawn
+                for (FleetMemberAPI member : engine.getFleetManager(FleetSide.ENEMY).getReservesCopy())
+                {
+                    if (!member.isFighterWing())
+                    {
+                        enemyShips.add(member.getSpecId());
+                    }
+                    else
+                    {
+                        enemyWings.add(member.getSpecId());
+                    }
+                }
+            }
+
+            createShipList(FleetSide.ENEMY, enemyShips, enemyWings);
         }
     }
 

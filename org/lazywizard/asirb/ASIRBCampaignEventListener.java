@@ -29,6 +29,8 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
     @Override
     public void reportPlayerEngagement(EngagementResultAPI result)
     {
+        // TODO: Add config option for requiring player victory for opponent unlock
+        // TODO: Add config option for wiping simulator list on player fleet destruction
         if (!result.didPlayerWin())
         {
             return;

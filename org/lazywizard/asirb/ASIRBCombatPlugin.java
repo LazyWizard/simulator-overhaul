@@ -19,11 +19,10 @@ import org.apache.log4j.Level;
 
 public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
 {
-    private static final float TIME_BETWEEN_CHECKS = .25f;
     // TODO: Make which Comparator this uses to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
     private Set<String> playerShips, enemyShips, playerWings, enemyWings;
-    private float nextCheck = 0f;
+    private boolean needsRecheck;
 
     private void createShipList(FleetSide side, Set<String> shipIds, Set<String> wingIds)
     {
@@ -52,7 +51,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             tmp.setOwner(side.ordinal());
             Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
                     "Added ship " + tmp.getHullId() + " to side " + side
-                            + " at CR " + tmp.getRepairTracker().getCR());
+                    + " at CR " + tmp.getRepairTracker().getCR());
             newReserves.add(tmp);
         }
         for (Iterator<String> iter = wingIds.iterator(); iter.hasNext();)
@@ -75,7 +74,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             tmp.setOwner(side.ordinal());
             Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
                     "Added wing " + tmp.getHullId() + " to side " + side
-                            + " at CR " + tmp.getRepairTracker().getCR());
+                    + " at CR " + tmp.getRepairTracker().getCR());
             newReserves.add(tmp);
         }
 
@@ -99,14 +98,21 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
     public void advance(float amount, List<InputEventAPI> events)
     {
         CombatEngineAPI engine = Global.getCombatEngine();
-        if (engine.isSimulation() && !engine.isUIShowingDialog())
+        if (engine.isSimulation())
         {
-            nextCheck -= amount;
-            if (nextCheck <= 0f)
+            // Only check for ship replacement after player uses picker dialog
+            if (engine.isUIShowingDialog())
             {
-                nextCheck = TIME_BETWEEN_CHECKS;
+                needsRecheck = true;
+                return;
+            }
 
-                // Regenerate missing enemy ships
+            // check if either fleet needs reserves respawned
+            if (needsRecheck)
+            {
+                needsRecheck = false;
+
+                // Regenerate missing enemy reserves
                 if (engine.getFleetManager(FleetSide.ENEMY).getReservesCopy().size()
                         != (enemyShips.size() + enemyWings.size()))
                 {
@@ -115,7 +121,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
                     createShipList(FleetSide.ENEMY, enemyShips, enemyWings);
                 }
 
-                // Regenerate missing player ships
+                // Regenerate missing player reserves
                 if (engine.isInCampaignSim()
                         && engine.getFleetManager(FleetSide.PLAYER).getReservesCopy().size()
                         != (playerShips.size() + playerWings.size()))
@@ -172,6 +178,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             }
 
             createShipList(FleetSide.ENEMY, enemyShips, enemyWings);
+            needsRecheck = false;
         }
     }
 

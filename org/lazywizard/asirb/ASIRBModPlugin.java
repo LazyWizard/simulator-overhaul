@@ -6,7 +6,8 @@ import org.apache.log4j.Level;
 
 public class ASIRBModPlugin extends BaseModPlugin
 {
-    private static final Level LOG_LEVEL = Level.DEBUG;
+    // TODO: Make log level a config file option
+    private static final Level LOG_LEVEL = Level.ALL;
 
     @Override
     public void onApplicationLoad() throws Exception

@@ -24,5 +24,6 @@ public class ASIRBModPlugin extends BaseModPlugin
         final ASIRBCampaignEventListener listener = new ASIRBCampaignEventListener();
         Global.getSector().addTransientListener(listener);
         Global.getSector().addTransientScript(listener);
+        ASIRBMaster.checkLegacy();
     }
 }

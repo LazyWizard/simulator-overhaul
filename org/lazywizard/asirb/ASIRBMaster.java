@@ -36,6 +36,8 @@ class ASIRBMaster
 
     public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
     {
+        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                "Adding " + type + " " + wingOrVariantId + " to known ships");
         getAllKnownShips().put(wingOrVariantId, type);
     }
 
@@ -49,62 +51,72 @@ class ASIRBMaster
     // TODO: Remove this after the next compatibility-breaking SS update
     static void checkLegacy()
     {
+        // Sanity check, make sure we're actually in the campaign
         SectorAPI sector = Global.getSector();
         if (sector == null)
         {
             return;
         }
 
+        // This should never trip, but just in case
         Map<String, Object> persistentData = sector.getPersistentData();
         if (persistentData == null)
         {
             return;
         }
 
-        Map<String, FleetMemberType> newData = new LinkedHashMap<>();
+        Map<String, FleetMemberType> toTransfer = new LinkedHashMap<>();
 
+        // Add old ships to simulator data
         if (persistentData.containsKey(LEGACY_SHIP_PDATA_ID))
         {
             for (String id : (Set<String>) persistentData.get(LEGACY_SHIP_PDATA_ID))
             {
-                newData.put(id, FleetMemberType.SHIP);
+                toTransfer.put(id, FleetMemberType.SHIP);
             }
 
             persistentData.remove(LEGACY_SHIP_PDATA_ID);
         }
 
+        // Add old wings to simulator data
         if (persistentData.containsKey(LEGACY_WING_PDATA_ID))
         {
             for (String id : (Set<String>) persistentData.get(LEGACY_WING_PDATA_ID))
             {
-                newData.put(id, FleetMemberType.FIGHTER_WING);
+                toTransfer.put(id, FleetMemberType.FIGHTER_WING);
             }
 
             persistentData.remove(LEGACY_WING_PDATA_ID);
         }
 
-        for (Map.Entry<String, FleetMemberType> entry : newData.entrySet())
+        // Register legacy simulator data with the new system
+        Map<String, FleetMemberType> known = getAllKnownShips();
+        for (Map.Entry<String, FleetMemberType> entry : toTransfer.entrySet())
         {
             Global.getLogger(ASIRBMaster.class).log(Level.INFO,
                     "Moving legacy ship " + entry.getKey() + " to new system");
-            addKnownShip(entry.getKey(), entry.getValue());
+            known.put(entry.getKey(), entry.getValue());
         }
     }
 
     public static Map<String, FleetMemberType> getAllKnownShips()
     {
+        // Sanity check, make sure we're actually in the campaign
         SectorAPI sector = Global.getSector();
         if (sector == null)
         {
             return Collections.<String, FleetMemberType>emptyMap();
         }
 
+        // This should never trip, but just in case
         Map<String, Object> persistentData = sector.getPersistentData();
         if (persistentData == null)
         {
             return Collections.<String, FleetMemberType>emptyMap();
         }
 
+        // If there wasn't already simlist data, fill it with starting ships
+        // TODO: Make starting simulator opponents a config file or CSV
         if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
             Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,

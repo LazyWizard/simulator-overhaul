@@ -7,6 +7,7 @@ import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.BaseCampaignEventListener;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
+import com.fs.starfarer.api.campaign.EngagementResultForFleetAPI;
 import com.fs.starfarer.api.combat.DeployedFleetMemberAPI;
 import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
@@ -26,25 +27,52 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
         newWings = new ArrayList<>();
     }
 
+    private static boolean wasFullyDestroyed(EngagementResultForFleetAPI fleet)
+    {
+        /*System.out.println("Reserves size: " + fleet.getReserves().size());
+        System.out.println("Deployed size: " + fleet.getDeployed().size());
+        System.out.println("Retreated size: " + fleet.getRetreated().size());
+        System.out.println("Is valid: " + fleet.getFleet().isValidPlayerFleet());*/
+        return (fleet.getReserves().isEmpty() && fleet.getDeployed().isEmpty()
+                && fleet.getRetreated().isEmpty());
+    }
+
     @Override
     public void reportPlayerEngagement(EngagementResultAPI result)
     {
-        // TODO: Add config option for requiring player victory for opponent unlock
-        // TODO: Add config option for wiping simulator list on player fleet destruction
         if (!result.didPlayerWin())
         {
-            return;
+            // Wipe sim list on fleet death if that option is enabled
+            if (ASIRBSettings.WIPE_SIM_DATA_ON_PLAYER_DEATH
+                    && wasFullyDestroyed(result.getLoserResult()))
+            {
+                ASIRBMaster.getAllKnownShips().clear();
+                ASIRBMaster.generateDefaultSimOpponents();
+            }
+
+            // Don't remember opponents on a loss if that option is enabled
+            if (ASIRBSettings.REQUIRE_PLAYER_VICTORY_TO_UNLOCK)
+            {
+                return;
+            }
         }
 
+        // Check the deployed ships for opponents we've never fought before
         final List<DeployedFleetMemberAPI> seenShips
                 = result.getLoserResult().getAllEverDeployedCopy();
         seenShips.addAll(result.getWinnerResult().getAllEverDeployedCopy());
-
         for (DeployedFleetMemberAPI dfm : seenShips)
         {
             ShipAPI ship = dfm.getShip();
             if (ASIRBMaster.checkAddOpponent(ship))
             {
+                // If we aren't announcing new opponents, don't track them
+                if (!ASIRBSettings.SHOW_UNLOCKED_OPPONENTS)
+                {
+                    continue;
+                }
+
+                // Register the newly unlocked variant to be announced on the campaign map
                 if (ship.isFighter())
                 {
                     newWings.add(ship.getVariant().getFullDesignationWithHullName());
@@ -72,9 +100,8 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
     @Override
     public void advance(float amount)
     {
-        // TODO: Add 'show message' option to config, return immediately if false
         CampaignUIAPI ui = Global.getSector().getCampaignUI();
-        if (ui == null || ui.isShowingDialog())
+        if (ui == null || ui.isShowingDialog() || !ASIRBSettings.SHOW_UNLOCKED_OPPONENTS)
         {
             return;
         }

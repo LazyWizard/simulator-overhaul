@@ -47,7 +47,6 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
                     && wasFullyDestroyed(result.getLoserResult()))
             {
                 ASIRBMaster.getAllKnownShips().clear();
-                ASIRBMaster.generateDefaultSimOpponents();
             }
 
             // Don't remember opponents on a loss if that option is enabled

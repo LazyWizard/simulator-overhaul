@@ -21,12 +21,12 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
 {
     // TODO: Make which Comparator this uses to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
-    private Map<String, Boolean> playerShips, enemyShips;
+    private Map<String, FleetMemberType> playerShips, enemyShips;
     private boolean needsRecheck;
 
     // TODO: Only create ships that are missing from reserve list
     private static void createShipList(final FleetSide side,
-            final Map<String, Boolean> shipIds)
+            final Map<String, FleetMemberType> shipIds)
     {
         final List<FleetMemberAPI> newReserves = new ArrayList<>();
         Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
@@ -34,13 +34,12 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
 
         // Create replacement ship reserves
         FleetMemberAPI tmp;
-        for (Iterator<Map.Entry<String, Boolean>> iter
+        for (Iterator<Map.Entry<String, FleetMemberType>> iter
                 = shipIds.entrySet().iterator(); iter.hasNext();)
         {
-            Map.Entry<String, Boolean> entry = iter.next();
+            Map.Entry<String, FleetMemberType> entry = iter.next();
             String shipId = entry.getKey();
-            FleetMemberType type = (entry.getValue()
-                    ? FleetMemberType.FIGHTER_WING : FleetMemberType.SHIP);
+            FleetMemberType type = entry.getValue();
             try
             {
                 tmp = Global.getFactory().createFleetMember(type, shipId);
@@ -133,7 +132,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
                 // Remember player ships in campaign
                 for (FleetMemberAPI member : engine.getFleetManager(FleetSide.PLAYER).getReservesCopy())
                 {
-                    playerShips.put(member.getSpecId(), member.isFighterWing());
+                    playerShips.put(member.getSpecId(), member.getType());
                 }
             }
             else
@@ -143,7 +142,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
                 // Remember all sim_opponents.csv opponents in missions
                 for (FleetMemberAPI member : engine.getFleetManager(FleetSide.ENEMY).getReservesCopy())
                 {
-                    enemyShips.put(member.getSpecId(), member.isFighterWing());
+                    enemyShips.put(member.getSpecId(), member.getType());
                 }
             }
 

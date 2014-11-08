@@ -13,14 +13,9 @@ import org.apache.log4j.Level;
 
 class ASIRBMaster
 {
-    private static final String KNOWN_PDATA_ID = "lw_simlist_ships";
+    private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_ships";
     private static final String LEGACY_SHIP_PDATA_ID = "lw_ASIRB_knownships";
     private static final String LEGACY_WING_PDATA_ID = "lw_ASIRB_knownwings";
-
-    static FleetMemberType getType(ShipAPI ship)
-    {
-        return (ship.isFighter() ? FleetMemberType.FIGHTER_WING : FleetMemberType.SHIP);
-    }
 
     static boolean checkAddOpponent(ShipAPI opponent)
     {
@@ -29,12 +24,14 @@ class ASIRBMaster
             return false;
         }
 
-        Map<String, FleetMemberType> known = getAllKnownShips();
+        // Add ship to persistent data, return true if it wasn't already known
         String id = (opponent.isFighter() ? opponent.getWing().getWingId()
                 : opponent.getVariant().getHullVariantId());
+        FleetMemberType type = (opponent.isFighter() ? FleetMemberType.FIGHTER_WING
+                : FleetMemberType.SHIP);
         Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
-                "Attempting to add " + id + " to known ships");
-        return (known.put(id, getType(opponent)) != null);
+                "Attempting to add " + type + " " + id + " to known ships");
+        return (getAllKnownShips().put(id, type) == null);
     }
 
     public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
@@ -49,6 +46,7 @@ class ASIRBMaster
         getAllKnownShips().remove(wingOrVariantId);
     }
 
+    // TODO: Remove this after the next compatibility-breaking SS update
     static void checkLegacy()
     {
         SectorAPI sector = Global.getSector();
@@ -107,18 +105,18 @@ class ASIRBMaster
             return Collections.<String, FleetMemberType>emptyMap();
         }
 
-        if (!persistentData.containsKey(KNOWN_PDATA_ID))
+        if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
             Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
                     "Creating default ship list");
             Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
             tmp.put("hound_Standard", FleetMemberType.SHIP);
             tmp.put("talon_wing", FleetMemberType.FIGHTER_WING);
-            persistentData.put(KNOWN_PDATA_ID, tmp);
+            persistentData.put(KNOWN_SHIPS_PDATA_ID, tmp);
             return tmp;
         }
 
-        return (Map<String, FleetMemberType>) persistentData.get(KNOWN_PDATA_ID);
+        return (Map<String, FleetMemberType>) persistentData.get(KNOWN_SHIPS_PDATA_ID);
     }
 
     private ASIRBMaster()

@@ -99,6 +99,16 @@ class ASIRBMaster
         }
     }
 
+    static Map<String, FleetMemberType> generateDefaultSimOpponents()
+    {
+        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+                "Creating default ship list");
+        Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
+        tmp.put("hound_Standard", FleetMemberType.SHIP);
+        tmp.put("talon_wing", FleetMemberType.FIGHTER_WING);
+        return tmp;
+    }
+
     public static Map<String, FleetMemberType> getAllKnownShips()
     {
         // Sanity check, make sure we're actually in the campaign
@@ -119,11 +129,7 @@ class ASIRBMaster
         // TODO: Make starting simulator opponents a config file or CSV
         if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
-            Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
-                    "Creating default ship list");
-            Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
-            tmp.put("hound_Standard", FleetMemberType.SHIP);
-            tmp.put("talon_wing", FleetMemberType.FIGHTER_WING);
+            Map<String, FleetMemberType> tmp = generateDefaultSimOpponents();
             persistentData.put(KNOWN_SHIPS_PDATA_ID, tmp);
             return tmp;
         }

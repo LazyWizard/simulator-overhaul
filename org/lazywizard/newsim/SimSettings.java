@@ -9,14 +9,15 @@ import org.json.JSONObject;
 class SimSettings
 {
     private static final String SETTINGS_FILE = "sim_settings.json";
-    static boolean REQUIRE_PLAYER_VICTORY_TO_UNLOCK;
-    static boolean WIPE_SIM_DATA_ON_PLAYER_DEATH;
-    static boolean SHOW_UNLOCKED_OPPONENTS;
+    static float STARTING_CR;
+    static boolean REQUIRE_PLAYER_VICTORY_TO_UNLOCK, WIPE_SIM_DATA_ON_PLAYER_DEATH,
+            SHOW_UNLOCKED_OPPONENTS;
 
     static void reload() throws IOException, JSONException
     {
         // Load settings from the json
         final JSONObject settings = Global.getSettings().loadJSON(SETTINGS_FILE);
+        STARTING_CR = (float) settings.optDouble("startingCR", 0.6);
         REQUIRE_PLAYER_VICTORY_TO_UNLOCK = settings.optBoolean(
                 "requirePlayerVictoryToUnlock", true);
         WIPE_SIM_DATA_ON_PLAYER_DEATH = settings.optBoolean(

@@ -52,8 +52,11 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                 continue;
             }
 
-            tmp.getRepairTracker().setCR(.6f);
+            // Set the created ship's combat readiness and which side it fights for
             tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
+            tmp.getRepairTracker().setCR(SimSettings.STARTING_CR);
+            tmp.getStats().getMaxCombatReadiness().modifyFlat("sim_startingcr",
+                    (SimSettings.STARTING_CR - .6f));
             tmp.setOwner(side.ordinal());
             Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
                     "Added " + type + " " + shipId + " to side " + side
@@ -94,7 +97,7 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
             if (needsRecheck)
             {
                 Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                        "Needs re-check!");
+                        "Rechecking sim reserves");
                 needsRecheck = false;
 
                 // Regenerate missing enemy reserves
@@ -102,7 +105,7 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                         .getReservesCopy().size() != enemyShips.size())
                 {
                     Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                            "Checking side: " + FleetSide.ENEMY);
+                            "Regenerating side: " + FleetSide.ENEMY);
                     createShipList(FleetSide.ENEMY, enemyShips);
                 }
 
@@ -111,7 +114,7 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                         .getReservesCopy().size() != playerShips.size())
                 {
                     Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                            "Checking side: " + FleetSide.PLAYER);
+                            "Regenerating side: " + FleetSide.PLAYER);
                     createShipList(FleetSide.PLAYER, playerShips);
                 }
             }

@@ -1,4 +1,4 @@
-package org.lazywizard.asirb;
+package org.lazywizard.newsim;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -11,11 +11,30 @@ import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.loading.VariantSource;
 import org.apache.log4j.Level;
 
-class ASIRBMaster
+public class SimMaster
 {
-    private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_ships";
+    private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_opponents";
     private static final String LEGACY_SHIP_PDATA_ID = "lw_ASIRB_knownships";
     private static final String LEGACY_WING_PDATA_ID = "lw_ASIRB_knownwings";
+
+    public static Map<String, FleetMemberType> getAllKnownShips()
+    {
+        return new LinkedHashMap<>(getAllKnownShipsActual());
+    }
+
+    public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
+    {
+        Global.getLogger(SimMaster.class).log(Level.DEBUG,
+                "Adding " + type + " " + wingOrVariantId + " to known ships");
+        getAllKnownShipsActual().put(wingOrVariantId, type);
+    }
+
+    public static void removeKnownShip(String wingOrVariantId)
+    {
+        Global.getLogger(SimMaster.class).log(Level.DEBUG,
+                "Removing ship " + wingOrVariantId + " from known ships");
+        getAllKnownShipsActual().remove(wingOrVariantId);
+    }
 
     static boolean checkAddOpponent(ShipAPI opponent)
     {
@@ -29,23 +48,9 @@ class ASIRBMaster
                 : opponent.getVariant().getHullVariantId());
         FleetMemberType type = (opponent.isFighter() ? FleetMemberType.FIGHTER_WING
                 : FleetMemberType.SHIP);
-        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+        Global.getLogger(SimMaster.class).log(Level.DEBUG,
                 "Attempting to add " + type + " " + id + " to known ships");
-        return (getAllKnownShips().put(id, type) == null);
-    }
-
-    public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
-    {
-        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
-                "Adding " + type + " " + wingOrVariantId + " to known ships");
-        getAllKnownShips().put(wingOrVariantId, type);
-    }
-
-    public static void removeKnownShip(String wingOrVariantId)
-    {
-        Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
-                "Removing ship " + wingOrVariantId + " from known ships");
-        getAllKnownShips().remove(wingOrVariantId);
+        return (getAllKnownShipsActual().put(id, type) == null);
     }
 
     // TODO: Remove this after the next compatibility-breaking SS update
@@ -90,16 +95,26 @@ class ASIRBMaster
         }
 
         // Register legacy simulator data with the new system
-        Map<String, FleetMemberType> known = getAllKnownShips();
-        for (Map.Entry<String, FleetMemberType> entry : toTransfer.entrySet())
+        if (!toTransfer.isEmpty())
         {
-            Global.getLogger(ASIRBMaster.class).log(Level.INFO,
-                    "Moving legacy ship " + entry.getKey() + " to new system");
-            known.put(entry.getKey(), entry.getValue());
+            Map<String, FleetMemberType> known = getAllKnownShipsActual();
+            for (Map.Entry<String, FleetMemberType> entry : toTransfer.entrySet())
+            {
+                Global.getLogger(SimMaster.class).log(Level.INFO,
+                        "Moving legacy ship " + entry.getKey() + " to new system");
+                known.put(entry.getKey(), entry.getValue());
+            }
+
+            // Notify player of transferred data
+            if (SimSettings.SHOW_UNLOCKED_OPPONENTS)
+            {
+                Global.getSector().getCampaignUI().addMessage(
+                        "Combat simulator hardware upgrade complete");
+            }
         }
     }
 
-    public static Map<String, FleetMemberType> getAllKnownShips()
+    static Map<String, FleetMemberType> getAllKnownShipsActual()
     {
         // Sanity check, make sure we're actually in the campaign
         SectorAPI sector = Global.getSector();
@@ -119,7 +134,7 @@ class ASIRBMaster
         // TODO: Make starting simulator opponents a config file or CSV
         if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
-            Global.getLogger(ASIRBMaster.class).log(Level.DEBUG,
+            Global.getLogger(SimMaster.class).log(Level.DEBUG,
                     "Creating default ship list");
             Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
             tmp.put("hound_Standard", FleetMemberType.SHIP);
@@ -131,7 +146,7 @@ class ASIRBMaster
         return (Map<String, FleetMemberType>) persistentData.get(KNOWN_SHIPS_PDATA_ID);
     }
 
-    private ASIRBMaster()
+    private SimMaster()
     {
     }
 }

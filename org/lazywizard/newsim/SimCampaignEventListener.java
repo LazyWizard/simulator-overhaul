@@ -1,4 +1,4 @@
-package org.lazywizard.asirb;
+package org.lazywizard.newsim;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,16 +11,17 @@ import com.fs.starfarer.api.campaign.EngagementResultForFleetAPI;
 import com.fs.starfarer.api.combat.DeployedFleetMemberAPI;
 import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
+import org.apache.log4j.Level;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
-class ASIRBCampaignEventListener extends BaseCampaignEventListener implements EveryFrameScript
+class SimCampaignEventListener extends BaseCampaignEventListener implements EveryFrameScript
 {
     private static final float TIME_BETWEEN_REPORT_CHECKS = .25f;
     private final List<String> newShips, newWings;
     private float timeUntilReportCheck = TIME_BETWEEN_REPORT_CHECKS;
 
-    ASIRBCampaignEventListener()
+    SimCampaignEventListener()
     {
         super(false);
         newShips = new ArrayList<>();
@@ -29,10 +30,11 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
 
     private static boolean wasFullyDestroyed(EngagementResultForFleetAPI fleet)
     {
-        /*System.out.println("Reserves size: " + fleet.getReserves().size());
-        System.out.println("Deployed size: " + fleet.getDeployed().size());
-        System.out.println("Retreated size: " + fleet.getRetreated().size());
-        System.out.println("Is valid: " + fleet.getFleet().isValidPlayerFleet());*/
+        Global.getLogger(SimCampaignEventListener.class).log(Level.DEBUG,
+                "Reserves size: " + fleet.getReserves().size()
+                + "\nDeployed size: " + fleet.getDeployed().size()
+                + "\nRetreated size: " + fleet.getRetreated().size()
+                + "\nIs valid: " + fleet.getFleet().isValidPlayerFleet());
         return (fleet.getReserves().isEmpty() && fleet.getDeployed().isEmpty()
                 && fleet.getRetreated().isEmpty());
     }
@@ -43,14 +45,14 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
         if (!result.didPlayerWin())
         {
             // Wipe sim list on fleet death if that option is enabled
-            if (ASIRBSettings.WIPE_SIM_DATA_ON_PLAYER_DEATH
+            if (SimSettings.WIPE_SIM_DATA_ON_PLAYER_DEATH
                     && wasFullyDestroyed(result.getLoserResult()))
             {
-                ASIRBMaster.getAllKnownShips().clear();
+                SimMaster.getAllKnownShipsActual().clear();
             }
 
             // Don't remember opponents on a loss if that option is enabled
-            if (ASIRBSettings.REQUIRE_PLAYER_VICTORY_TO_UNLOCK)
+            if (SimSettings.REQUIRE_PLAYER_VICTORY_TO_UNLOCK)
             {
                 return;
             }
@@ -63,10 +65,10 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
         for (DeployedFleetMemberAPI dfm : seenShips)
         {
             ShipAPI ship = dfm.getShip();
-            if (ASIRBMaster.checkAddOpponent(ship))
+            if (SimMaster.checkAddOpponent(ship))
             {
-                // If we aren't announcing new opponents, don't track them
-                if (!ASIRBSettings.SHOW_UNLOCKED_OPPONENTS)
+                // If we aren't announcing new unlocks don't populate the announcement list
+                if (!SimSettings.SHOW_UNLOCKED_OPPONENTS)
                 {
                     continue;
                 }
@@ -100,7 +102,7 @@ class ASIRBCampaignEventListener extends BaseCampaignEventListener implements Ev
     public void advance(float amount)
     {
         CampaignUIAPI ui = Global.getSector().getCampaignUI();
-        if (ui == null || ui.isShowingDialog() || !ASIRBSettings.SHOW_UNLOCKED_OPPONENTS)
+        if (!SimSettings.SHOW_UNLOCKED_OPPONENTS || ui == null || ui.isShowingDialog())
         {
             return;
         }

@@ -1,4 +1,4 @@
-package org.lazywizard.asirb;
+package org.lazywizard.newsim;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +17,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.mission.FleetSide;
 import org.apache.log4j.Level;
 
-public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
+public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
 {
     // TODO: Make which Comparator this uses to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
@@ -29,7 +29,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             final Map<String, FleetMemberType> shipIds)
     {
         final List<FleetMemberAPI> newReserves = new ArrayList<>();
-        Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+        Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
                 "Checking ships for side " + side.name());
 
         // Create replacement ship reserves
@@ -46,7 +46,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             }
             catch (Exception ex)
             {
-                Global.getLogger(ASIRBCombatPlugin.class).log(Level.ERROR,
+                Global.getLogger(SimCombatPlugin.class).log(Level.ERROR,
                         "Failed to create " + type + " " + shipId, ex);
                 iter.remove();
                 continue;
@@ -55,7 +55,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             tmp.getRepairTracker().setCR(.6f);
             tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
             tmp.setOwner(side.ordinal());
-            Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+            Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
                     "Added " + type + " " + shipId + " to side " + side
                     + " at CR " + tmp.getRepairTracker().getCR());
             newReserves.add(tmp);
@@ -93,7 +93,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             // check if either fleet needs reserves respawned
             if (needsRecheck)
             {
-                Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+                Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
                         "Needs re-check!");
                 needsRecheck = false;
 
@@ -101,7 +101,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
                 if (engine.getFleetManager(FleetSide.ENEMY)
                         .getReservesCopy().size() != enemyShips.size())
                 {
-                    Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+                    Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
                             "Checking side: " + FleetSide.ENEMY);
                     createShipList(FleetSide.ENEMY, enemyShips);
                 }
@@ -110,7 +110,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
                 if (engine.isInCampaignSim() && engine.getFleetManager(FleetSide.PLAYER)
                         .getReservesCopy().size() != playerShips.size())
                 {
-                    Global.getLogger(ASIRBCombatPlugin.class).log(Level.DEBUG,
+                    Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
                             "Checking side: " + FleetSide.PLAYER);
                     createShipList(FleetSide.PLAYER, playerShips);
                 }
@@ -127,7 +127,7 @@ public class ASIRBCombatPlugin extends BaseEveryFrameCombatPlugin
             if (engine.isInCampaignSim())
             {
                 playerShips = new LinkedHashMap<>();
-                enemyShips = ASIRBMaster.getAllKnownShips();
+                enemyShips = SimMaster.getAllKnownShipsActual();
 
                 // Remember player ships in campaign
                 for (FleetMemberAPI member : engine.getFleetManager(FleetSide.PLAYER).getReservesCopy())

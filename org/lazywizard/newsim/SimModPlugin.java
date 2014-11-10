@@ -1,22 +1,22 @@
-package org.lazywizard.asirb;
+package org.lazywizard.newsim;
 
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 
-public class ASIRBModPlugin extends BaseModPlugin
+public class SimModPlugin extends BaseModPlugin
 {
     @Override
     public void onApplicationLoad() throws Exception
     {
-        ASIRBSettings.reload();
+        SimSettings.reload();
     }
 
     @Override
     public void onGameLoad()
     {
-        final ASIRBCampaignEventListener listener = new ASIRBCampaignEventListener();
+        final SimCampaignEventListener listener = new SimCampaignEventListener();
         Global.getSector().addTransientListener(listener);
         Global.getSector().addTransientScript(listener);
-        ASIRBMaster.checkLegacy();
+        SimMaster.checkLegacy();
     }
 }

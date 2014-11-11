@@ -83,6 +83,13 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
     @Override
     public void advance(float amount, List<InputEventAPI> events)
     {
+        // Doesn't function properly with Starsector+ randomized variants
+        if (SimSettings.IS_SSP_ENABLED)
+        {
+            Global.getCombatEngine().removePlugin(this);
+            return;
+        }
+
         CombatEngineAPI engine = Global.getCombatEngine();
         if (engine.isSimulation())
         {
@@ -124,6 +131,13 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
     @Override
     public void init(CombatEngineAPI engine)
     {
+        // Doesn't function properly with Starsector+ randomized variants
+        if (SimSettings.IS_SSP_ENABLED)
+        {
+            //engine.removePlugin(this); // Crashes
+            return;
+        }
+
         if (engine.isSimulation())
         {
             // Remember previously fought opponents in campaign

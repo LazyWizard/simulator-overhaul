@@ -5,13 +5,20 @@ import com.fs.starfarer.api.Global;
 import org.apache.log4j.Level;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.lazywizard.lazylib.ModUtils;
 
 class SimSettings
 {
     private static final String SETTINGS_FILE = "sim_settings.json";
+    static final boolean IS_SSP_ENABLED;
+    static boolean REQUIRE_PLAYER_VICTORY_TO_UNLOCK,
+            WIPE_SIM_DATA_ON_PLAYER_DEATH, SHOW_UNLOCKED_OPPONENTS;
     static float STARTING_CR;
-    static boolean REQUIRE_PLAYER_VICTORY_TO_UNLOCK, WIPE_SIM_DATA_ON_PLAYER_DEATH,
-            SHOW_UNLOCKED_OPPONENTS;
+
+    static
+    {
+        IS_SSP_ENABLED = ModUtils.isClassPresent("data.scripts.SSPModPlugin");
+    }
 
     static void reload() throws IOException, JSONException
     {

@@ -14,6 +14,12 @@ public class SimModPlugin extends BaseModPlugin
     @Override
     public void onGameLoad()
     {
+        // Doesn't function properly with Starsector+ randomized variants
+        if (SimSettings.IS_SSP_ENABLED)
+        {
+            return;
+        }
+
         final SimCampaignEventListener listener = new SimCampaignEventListener();
         Global.getSector().addTransientListener(listener);
         Global.getSector().addTransientScript(listener);

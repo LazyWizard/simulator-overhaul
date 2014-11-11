@@ -1,0 +1,14 @@
+ 1.0 (November 11, 2014)
+=========================
+Renamed mod to Simulator Overhaul (was All Ships in Refit Battles)
+Changes since alpha:
+ - Added config file sim_settings.json, can customize how the mod works here
+ - Newly unlocked campaign sim opponents will be announced after battle is over
+ - Full opponent list appears at the start of a simulation (you don't need to
+   close and reopen the opponents list for all known ships to show up)
+ - Allied reserves are infinitely respawnable in campaign simulations
+   (known bug: replacement allies don't benefit from fleet-wide skill effects)
+   (known bug: replacement allies have 60% CR regardless of original value)
+ - Mission simulation reserves now infinite, sorted, uses sim_opponents.csv
+ - Changed how persistent data is handled (will automatically import old data)
+ - Minor optimizations and code cleanup

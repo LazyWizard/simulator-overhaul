@@ -22,7 +22,7 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
     // TODO: Make which Comparator this uses to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
     private Map<String, FleetMemberType> playerShips, enemyShips;
-    private boolean needsRecheck;
+    private boolean needsRecheck, useSimList;
 
     // TODO: Only create ships that are missing from reserve list
     private static void createShipList(final FleetSide side,
@@ -83,13 +83,6 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
     @Override
     public void advance(float amount, List<InputEventAPI> events)
     {
-        // Doesn't function properly with Starsector+ randomized variants
-        if (SimSettings.IS_SSP_ENABLED)
-        {
-            Global.getCombatEngine().removePlugin(this);
-            return;
-        }
-
         CombatEngineAPI engine = Global.getCombatEngine();
         if (engine.isSimulation())
         {
@@ -128,41 +121,31 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
         }
     }
 
+    private static Map<String, FleetMemberType> getReservesMap(FleetSide side)
+    {
+        Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
+
+        // Remember all sim_opponents.csv opponents in missions
+        for (FleetMemberAPI member : Global.getCombatEngine().getFleetManager(side).getReservesCopy())
+        {
+            tmp.put(member.getSpecId(), member.getType());
+        }
+
+        return tmp;
+    }
+
     @Override
     public void init(CombatEngineAPI engine)
     {
-        // Doesn't function properly with Starsector+ randomized variants
-        if (SimSettings.IS_SSP_ENABLED)
-        {
-            //engine.removePlugin(this); // Crashes
-            return;
-        }
-
         if (engine.isSimulation())
         {
-            // Remember previously fought opponents in campaign
-            if (engine.isInCampaignSim())
-            {
-                playerShips = new LinkedHashMap<>();
-                enemyShips = SimMaster.getAllKnownShipsActual();
+            useSimList = (engine.isInCampaignSim() && !SimSettings.IS_SSP_ENABLED);
+            Global.getLogger(SimCombatPlugin.class).log(Level.INFO,
+                    "Using sim_opponents.csv: " + !useSimList);
 
-                // Remember player ships in campaign
-                for (FleetMemberAPI member : engine.getFleetManager(FleetSide.PLAYER).getReservesCopy())
-                {
-                    playerShips.put(member.getSpecId(), member.getType());
-                }
-            }
-            else
-            {
-                enemyShips = new LinkedHashMap<>();
-
-                // Remember all sim_opponents.csv opponents in missions
-                for (FleetMemberAPI member : engine.getFleetManager(FleetSide.ENEMY).getReservesCopy())
-                {
-                    enemyShips.put(member.getSpecId(), member.getType());
-                }
-            }
-
+            playerShips = getReservesMap(FleetSide.PLAYER);
+            enemyShips = (useSimList ? SimMaster.getAllKnownShipsActual()
+                    : getReservesMap(FleetSide.ENEMY));
             createShipList(FleetSide.ENEMY, enemyShips);
             needsRecheck = false;
         }

@@ -1,0 +1,19 @@
+{
+    # How thoroughly the mod logs debug output, you can ignore this setting
+    # Valid levels: OFF, FATAL, ERROR, WARN, INFO, DEBUG, ALL
+    "logLevel":"WARN", # Default: WARN
+    
+    # How much combat readiness sim opponents have, from 0.0 to 1.0
+    "startingCR":0.6, # Default: 0.6 (equivalent to regular crew)
+    
+    # Controls whether the game will announce newly unlocked sim
+    # opponents after each battle on the campaign map
+    "showUnlockedOpponents":true, # Default: true
+    
+    # Whether simulation opponents will only be unlocked if you won the
+    # battle against their host fleet (if false, retreats and defeats count)
+    "requirePlayerVictoryToUnlock":false, # Default: false
+    
+    # Controls whether the entire sim list is cleared when your fleet is destroyed
+    "wipeSimDataOnPlayerDeath":false # Default: false
+}

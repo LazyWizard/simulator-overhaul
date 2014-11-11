@@ -1,7 +1,7 @@
 {
     # How thoroughly the mod logs debug output, you can ignore this setting
     # Valid levels: OFF, FATAL, ERROR, WARN, INFO, DEBUG, ALL
-    "logLevel":"WARN", # Default: WARN
+    "logLevel":"INFO", # Default: INFO
     
     # How much combat readiness sim opponents have, from 0.0 to 1.0
     "startingCR":0.6, # Default: 0.6 (equivalent to regular crew)

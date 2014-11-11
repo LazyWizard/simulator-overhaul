@@ -1,6 +1,11 @@
+ 1.0b (November 11, 2014)
+==========================
+Use sim_opponents.csv and vanilla behavior when Starsector+ is installed
+
  1.0 (November 11, 2014)
 =========================
 Renamed mod to Simulator Overhaul (was All Ships in Refit Battles)
+Mod now requires LazyLib to function
 Changes since alpha:
  - Added config file sim_settings.json, can customize how the mod works here
  - Newly unlocked campaign sim opponents will be announced after battle is over

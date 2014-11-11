@@ -57,6 +57,12 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
                 return;
             }
         }
+        // Don't include battles fough by second in command
+        if (result.getWinnerResult().getAllEverDeployedCopy() == null
+                || result.getLoserResult().getAllEverDeployedCopy() == null)
+        {
+            return;
+        }
 
         // Check the deployed ships for opponents we've never fought before
         final List<DeployedFleetMemberAPI> seenShips

@@ -1,19 +1,40 @@
 {
-    # How thoroughly the mod logs debug output, you can ignore this setting
+    # You can ignore this setting, it's only useful to track down errors
     # Valid levels: OFF, FATAL, ERROR, WARN, INFO, DEBUG, ALL
     "logLevel":"INFO", # Default: INFO
-    
+
     # How much combat readiness sim opponents have, from 0.0 to 1.0
+    # Also applies to replacement allies in the campaign simulator
     "startingCR":0.6, # Default: 0.6 (equivalent to regular crew)
-    
+
+    # Whether the player's flagship should be fully healed when all
+    # enemy ships have been destroyed (also restores armor and ammo)
+    "healOnVictory":true, # Default: true
+
+    # Whether all ships in simulation battles have infinite combat readiness
+    "infiniteCR":true, # Default: true
+
+    # Whether to delete hulks from simulations after enough time has passed
+    # Hulks will survive for ~30 seconds before being removed with this active
+    "cleanUpHulks":true, # Default: true
+
+    # Whether to include empty hull variants at the end of the sim list for
+    # all unlocked opponents, useful for damage testing/catharsis factor
+    "includeHulls":false, # Default: false
+
     # Controls whether the game will announce newly unlocked sim
     # opponents after each battle on the campaign map
     "showUnlockedOpponents":true, # Default: true
-    
+
     # Whether simulation opponents will only be unlocked if you won the
     # battle against their host fleet (if false, retreats and defeats count)
     "requirePlayerVictoryToUnlock":false, # Default: false
-    
+
     # Controls whether the entire sim list is cleared when your fleet is destroyed
-    "wipeSimDataOnPlayerDeath":false # Default: false
+    "wipeSimDataOnPlayerDeath":false, # Default: false
+
+    # Whether to use the vanilla opponent list when Starsector+ is activated
+    # This is enabled by default because SS+'s randomized variants won't be
+    # picked up by this mod, so you will rarely unlock new foes after battles
+    "useVanillaSimListWithStarsector+":true # Default: true
 }

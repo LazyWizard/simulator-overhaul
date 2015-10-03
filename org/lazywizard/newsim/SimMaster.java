@@ -9,10 +9,15 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.loading.VariantSource;
-import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class SimMaster
 {
+    private static final Logger Log = Global.getLogger(SimMaster.class);
+    private static final String STARTING_OPPONENTS_CSV
+            = "data/config/simulator/starting_sim_opponents.csv";
     private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_opponents";
     private static final String LEGACY_SHIP_PDATA_ID = "lw_ASIRB_knownships";
     private static final String LEGACY_WING_PDATA_ID = "lw_ASIRB_knownwings";
@@ -24,32 +29,31 @@ public class SimMaster
 
     public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
     {
-        Global.getLogger(SimMaster.class).log(Level.DEBUG,
-                "Adding " + type + " " + wingOrVariantId + " to known ships");
+        Log.debug("Adding " + type + " " + wingOrVariantId + " to known ships");
         getAllKnownShipsActual().put(wingOrVariantId, type);
     }
 
     public static void removeKnownShip(String wingOrVariantId)
     {
-        Global.getLogger(SimMaster.class).log(Level.DEBUG,
-                "Removing ship " + wingOrVariantId + " from known ships");
+        Log.debug("Removing ship " + wingOrVariantId + " from known ships");
         getAllKnownShipsActual().remove(wingOrVariantId);
     }
 
     static boolean checkAddOpponent(ShipAPI opponent)
     {
-        if (opponent == null || opponent.getVariant().getSource() != VariantSource.STOCK)
+        // Only add stock variants, excluding empty hulls
+        if (opponent == null || opponent.getVariant().isEmptyHullVariant()
+                || opponent.getVariant().getSource() != VariantSource.STOCK)
         {
             return false;
         }
 
         // Add ship to persistent data, return true if it wasn't already known
-        String id = (opponent.isFighter() ? opponent.getWing().getWingId()
+        final String id = (opponent.isFighter() ? opponent.getWing().getWingId()
                 : opponent.getVariant().getHullVariantId());
-        FleetMemberType type = (opponent.isFighter() ? FleetMemberType.FIGHTER_WING
-                : FleetMemberType.SHIP);
-        Global.getLogger(SimMaster.class).log(Level.DEBUG,
-                "Attempting to add " + type + " " + id + " to known ships");
+        final FleetMemberType type = (opponent.isFighter()
+                ? FleetMemberType.FIGHTER_WING : FleetMemberType.SHIP);
+        Log.debug("Attempting to add " + type + " " + id + " to known ships");
         return (getAllKnownShipsActual().put(id, type) == null);
     }
 
@@ -57,20 +61,20 @@ public class SimMaster
     static void checkLegacy()
     {
         // Sanity check, make sure we're actually in the campaign
-        SectorAPI sector = Global.getSector();
+        final SectorAPI sector = Global.getSector();
         if (sector == null)
         {
             return;
         }
 
         // This should never trip, but just in case
-        Map<String, Object> persistentData = sector.getPersistentData();
+        final Map<String, Object> persistentData = sector.getPersistentData();
         if (persistentData == null)
         {
             return;
         }
 
-        Map<String, FleetMemberType> toTransfer = new LinkedHashMap<>();
+        final Map<String, FleetMemberType> toTransfer = new LinkedHashMap<>();
 
         // Add old ships to simulator data
         if (persistentData.containsKey(LEGACY_SHIP_PDATA_ID))
@@ -97,11 +101,10 @@ public class SimMaster
         // Register legacy simulator data with the new system
         if (!toTransfer.isEmpty())
         {
-            Map<String, FleetMemberType> known = getAllKnownShipsActual();
+            final Map<String, FleetMemberType> known = getAllKnownShipsActual();
             for (Map.Entry<String, FleetMemberType> entry : toTransfer.entrySet())
             {
-                Global.getLogger(SimMaster.class).log(Level.INFO,
-                        "Moving legacy ship " + entry.getKey() + " to new system");
+                Log.info("Moving legacy ship " + entry.getKey() + " to new system");
                 known.put(entry.getKey(), entry.getValue());
             }
 
@@ -117,28 +120,44 @@ public class SimMaster
     static Map<String, FleetMemberType> getAllKnownShipsActual()
     {
         // Sanity check, make sure we're actually in the campaign
-        SectorAPI sector = Global.getSector();
+        final SectorAPI sector = Global.getSector();
         if (sector == null)
         {
             return Collections.<String, FleetMemberType>emptyMap();
         }
 
         // This should never trip, but just in case
-        Map<String, Object> persistentData = sector.getPersistentData();
+        final Map<String, Object> persistentData = sector.getPersistentData();
         if (persistentData == null)
         {
             return Collections.<String, FleetMemberType>emptyMap();
         }
 
         // If there wasn't already simlist data, fill it with starting ships
-        // TODO: Make starting simulator opponents a config file or CSV
         if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
-            Global.getLogger(SimMaster.class).log(Level.DEBUG,
-                    "Creating default ship list");
-            Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
-            tmp.put("hound_Standard", FleetMemberType.SHIP);
-            tmp.put("talon_wing", FleetMemberType.FIGHTER_WING);
+            Log.debug("Creating default ship list");
+            final Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
+
+            try
+            {
+                final JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod(
+                        "id", STARTING_OPPONENTS_CSV, "lw_asirb");
+                for (int i = 0; i < csv.length(); i++)
+                {
+                    final JSONObject row = csv.getJSONObject(i);
+                    tmp.put(row.getString("id"), Enum.valueOf(
+                            FleetMemberType.class, row.getString("type")));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.error("Failed to read starting sim opponents, using hardcoded defaults!", ex);
+                tmp.clear();
+                tmp.put("hound_Standard", FleetMemberType.SHIP);
+                tmp.put("talon_wing", FleetMemberType.FIGHTER_WING);
+            }
+
             persistentData.put(KNOWN_SHIPS_PDATA_ID, tmp);
             return tmp;
         }

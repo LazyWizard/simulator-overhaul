@@ -1,3 +1,20 @@
+ 1.1 (October 03, 2015)
+========================
+Rewrite of reserve respawning logic to be much more efficient
+Unexported custom variants in player's fleet now respawn properly
+Hulls are sorted at the very end of the sim opponent list
+Moved configuration files to data/config/simulator
+Added "cleanUpHulks" setting, deletes hulks in sim after 30 seconds if true
+Added "infiniteCR" setting, gives ships in sim infinite combat readiness if true
+Added "healOnVictory" setting, restores player ship when all enemies are dead
+Added "includeHulls" setting, adds all known hulls to sim opponent list if true
+Added "useVanillaSimListWithStarsector+" setting, defaults to true
+Added starting_sim_opponents.csv:
+ - Allows other mods to add ships/wings to the starting sim list without having
+   to be unlocked by fighting them first
+ - Does nothing if Starsector+ is activated as unlocking is disabled with that
+   mod active
+
  1.0c (November 11, 2014)
 ==========================
 Re-enabled infinite reserves and sorted opponent lists for Starsector+

@@ -1,12 +1,13 @@
 package org.lazywizard.newsim;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.combat.BaseEveryFrameCombatPlugin;
 import com.fs.starfarer.api.combat.CombatEngineAPI;
@@ -15,57 +16,25 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.mission.FleetSide;
-import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
+// TODO: Ensure respawned allies have the same stats/skill effects as the original
 public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
 {
-    // TODO: Make which Comparator this uses to sort opponents into a config file option
+    private static final Logger Log = Global.getLogger(SimCombatPlugin.class);
+    // TODO: Change which Comparator is used to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
-    private Map<String, FleetMemberType> playerShips, enemyShips;
-    private boolean needsRecheck, useSimList;
+    private final Set<FleetMemberAPI> playerShips = new HashSet<>(), enemyShips = new HashSet<>();
+    private boolean needsRecheck = false, addHulkCleaner = false,
+            addHealPlugin = false, addInfiniteCR = false;
 
-    // TODO: Only create ships that are missing from reserve list
-    private static void createShipList(final FleetSide side,
-            final Map<String, FleetMemberType> shipIds)
+    // Awkward utility method since we don't have direct access to reserves list
+    private static void sortReserves(FleetSide side)
     {
-        final List<FleetMemberAPI> newReserves = new ArrayList<>();
-        Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                "Checking ships for side " + side.name());
-
-        // Create replacement ship reserves
-        FleetMemberAPI tmp;
-        for (Iterator<Map.Entry<String, FleetMemberType>> iter
-                = shipIds.entrySet().iterator(); iter.hasNext();)
-        {
-            Map.Entry<String, FleetMemberType> entry = iter.next();
-            String shipId = entry.getKey();
-            FleetMemberType type = entry.getValue();
-            try
-            {
-                tmp = Global.getFactory().createFleetMember(type, shipId);
-            }
-            catch (Exception ex)
-            {
-                Global.getLogger(SimCombatPlugin.class).log(Level.ERROR,
-                        "Failed to create " + type + " " + shipId, ex);
-                iter.remove();
-                continue;
-            }
-
-            // Set the created ship's combat readiness and which side it fights for
-            tmp.getCrewComposition().addRegular(tmp.getNeededCrew());
-            tmp.getRepairTracker().setCR(SimSettings.STARTING_CR);
-            tmp.getStats().getMaxCombatReadiness().modifyFlat("sim_startingcr",
-                    (SimSettings.STARTING_CR - .6f));
-            tmp.setOwner(side.ordinal());
-            Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                    "Added " + type + " " + shipId + " to side " + side
-                    + " at CR " + tmp.getRepairTracker().getCR());
-            newReserves.add(tmp);
-        }
-
-        CombatFleetManagerAPI fm = Global.getCombatEngine().getFleetManager(side);
-        Collections.sort(newReserves, comparator);
+        Log.debug("Sorting reserves of side " + side.name());
+        final CombatFleetManagerAPI fm = Global.getCombatEngine().getFleetManager(side);
+        final List<FleetMemberAPI> toSort = fm.getReservesCopy();
+        Collections.sort(toSort, comparator);
 
         // Clear existing simulation reserves
         for (FleetMemberAPI member : fm.getReservesCopy())
@@ -74,16 +43,155 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
         }
 
         // Add all variants to simulation reserves
-        for (FleetMemberAPI member : newReserves)
+        for (FleetMemberAPI member : toSort)
         {
             fm.addToReserves(member);
+        }
+    }
+
+    private static void clearReserves(FleetSide side)
+    {
+        Log.debug("Clearing reserves of side " + side.name());
+        final CombatFleetManagerAPI fm = Global.getCombatEngine().getFleetManager(side);
+        for (FleetMemberAPI member : fm.getReservesCopy())
+        {
+            fm.removeFromReserves(member);
+        }
+    }
+
+    private static FleetMemberAPI createFleetMember(String id, FleetMemberType type, FleetSide side)
+    {
+        // Set the created ship's combat readiness and which side it fights for
+        final FleetMemberAPI toAdd = Global.getFactory().createFleetMember(type, id);
+        toAdd.setShipName("SIM " + toAdd.getVariant().getDesignation());
+        toAdd.getCrewComposition().addRegular(toAdd.getNeededCrew());
+        toAdd.getRepairTracker().setCR(SimSettings.STARTING_CR);
+        toAdd.getStats().getMaxCombatReadiness().modifyFlat("sim_startingcr",
+                (SimSettings.STARTING_CR - .6f));
+        toAdd.setOwner(side.ordinal());
+        return toAdd;
+    }
+
+    private void generateReserveLists(boolean useUnlockedOpponentList)
+    {
+        playerShips.clear();
+        enemyShips.clear();
+        final CombatEngineAPI engine = Global.getCombatEngine();
+        final CombatFleetManagerAPI fmPlayer = engine.getFleetManager(FleetSide.PLAYER);
+        final CombatFleetManagerAPI fmEnemy = engine.getFleetManager(FleetSide.ENEMY);
+
+        // Register player ships for respawn
+        for (FleetMemberAPI member : fmPlayer.getReservesCopy())
+        {
+            playerShips.add(member);
+        }
+
+        // Register enemy known ship list and repopulate sim opponents with said list
+        if (useUnlockedOpponentList)
+        {
+            for (Iterator<Map.Entry<String, FleetMemberType>> iter
+                    = SimMaster.getAllKnownShipsActual().entrySet().iterator(); iter.hasNext();)
+            {
+                final Map.Entry<String, FleetMemberType> entry = iter.next();
+                try
+                {
+                    final FleetMemberAPI toAdd = createFleetMember(entry.getKey(),
+                            entry.getValue(), FleetSide.ENEMY);
+                    enemyShips.add(toAdd);
+                }
+                catch (Exception ex)
+                {
+                    Log.error("Failed to instantiate ship: " + entry.getKey()
+                            + " (" + entry.getValue().name() + ")", ex);
+                    iter.remove();
+                    Log.info("Removed " + entry.getKey() + " from known opponents list");
+                }
+            }
+        }
+        // Fallback: using sim_opponents.csv instead (missions/Starsector+)
+        else
+        {
+            for (FleetMemberAPI member : fmEnemy.getReservesCopy())
+            {
+                enemyShips.add(member);
+            }
+        }
+
+        // Auto-add hulls for known variants if relevant setting is enabled
+        if (SimSettings.INCLUDE_HULLS)
+        {
+            final Set<String> hulls = new LinkedHashSet<>();
+            for (FleetMemberAPI member : fmEnemy.getReservesCopy())
+            {
+                if (!member.isFighterWing() && !member.getVariant().isEmptyHullVariant())
+                {
+                    hulls.add(member.getHullSpec().getHullId() + "_Hull");
+                }
+            }
+
+            for (String hull : hulls)
+            {
+                final FleetMemberAPI toAdd = createFleetMember(hull,
+                        FleetMemberType.SHIP, FleetSide.ENEMY);
+                toAdd.setShipName("SIM Hull");
+                enemyShips.add(toAdd);
+            }
+        }
+
+        // Populate enemy reserves with replacement list
+        clearReserves(FleetSide.ENEMY);
+        checkReserves(FleetSide.ENEMY, enemyShips);
+    }
+
+    private static void checkReserves(FleetSide side, Set<FleetMemberAPI> reserves)
+    {
+        // Check which fleet members are no longer in a side's reserves
+        final CombatFleetManagerAPI fm = Global.getCombatEngine().getFleetManager(side);
+        final Set<FleetMemberAPI> missing = new HashSet<>(reserves);
+        missing.removeAll(fm.getReservesCopy());
+
+        // Re-add any members who have been deployed
+        if (!missing.isEmpty())
+        {
+            for (FleetMemberAPI oldShip : missing)
+            {
+                Log.debug("Adding " + oldShip.getSpecId() + " ("
+                        + oldShip.getType().name() + ", "
+                        + oldShip.getVariant().getSource()
+                        + ") to sim reserves of side " + side.name());
+
+                // Fighter wings are simple
+                if (oldShip.isFighterWing())
+                {
+                    final FleetMemberAPI newShip = createFleetMember(
+                            oldShip.getSpecId(), oldShip.getType(), side);
+                    reserves.remove(oldShip);
+                    reserves.add(newShip);
+                    fm.addToReserves(newShip);
+                }
+                // Ships are more hacky, have to work around unsaved variants
+                else
+                {
+                    final FleetMemberAPI newShip = createFleetMember(
+                            oldShip.getHullId() + "_Hull", oldShip.getType(), side);
+                    newShip.setCaptain(oldShip.getCaptain());
+                    newShip.setVariant(oldShip.getVariant(), false, true);
+                    newShip.setShipName(oldShip.getShipName());
+                    newShip.setStatUpdateNeeded(false);
+                    reserves.remove(oldShip);
+                    reserves.add(newShip);
+                    fm.addToReserves(newShip);
+                }
+            }
+
+            sortReserves(side);
         }
     }
 
     @Override
     public void advance(float amount, List<InputEventAPI> events)
     {
-        CombatEngineAPI engine = Global.getCombatEngine();
+        final CombatEngineAPI engine = Global.getCombatEngine();
         if (engine.isSimulation())
         {
             // Only check for ship replacement after player uses picker dialog
@@ -93,45 +201,50 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                 return;
             }
 
-            // check if either fleet needs reserves respawned
+            // TODO: TEMPORARY UNTIL 0.7a
+            if (addHulkCleaner)
+            {
+                addHulkCleaner = false;
+                engine.addPlugin(new HulkCleanerPlugin());
+            }
+
+            // TODO: TEMPORARY UNTIL 0.7a
+            if (addInfiniteCR)
+            {
+                addInfiniteCR = false;
+                engine.addPlugin(new InfiniteCRPlugin());
+            }
+
+            // TODO: TEMPORARY UNTIL 0.7a
+            if (addHealPlugin)
+            {
+                addHealPlugin = false;
+                engine.addPlugin(new HealOnVictoryPlugin());
+            }
+
+            // Check if either fleet needs reserves respawned
             if (needsRecheck)
             {
-                Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                        "Rechecking sim reserves");
+                Log.debug("Rechecking sim reserves");
                 needsRecheck = false;
 
                 // Regenerate missing enemy reserves
                 if (engine.getFleetManager(FleetSide.ENEMY)
                         .getReservesCopy().size() != enemyShips.size())
                 {
-                    Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                            "Regenerating side: " + FleetSide.ENEMY);
-                    createShipList(FleetSide.ENEMY, enemyShips);
+                    Log.debug("Regenerating side: " + FleetSide.ENEMY);
+                    checkReserves(FleetSide.ENEMY, enemyShips);
                 }
 
                 // Regenerate missing player reserves
                 if (engine.isInCampaignSim() && engine.getFleetManager(FleetSide.PLAYER)
                         .getReservesCopy().size() != playerShips.size())
                 {
-                    Global.getLogger(SimCombatPlugin.class).log(Level.DEBUG,
-                            "Regenerating side: " + FleetSide.PLAYER);
-                    createShipList(FleetSide.PLAYER, playerShips);
+                    Log.debug("Regenerating side: " + FleetSide.PLAYER);
+                    checkReserves(FleetSide.PLAYER, playerShips);
                 }
             }
         }
-    }
-
-    private static Map<String, FleetMemberType> getReservesMap(FleetSide side)
-    {
-        Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
-
-        // Remember all sim_opponents.csv opponents in missions
-        for (FleetMemberAPI member : Global.getCombatEngine().getFleetManager(side).getReservesCopy())
-        {
-            tmp.put(member.getSpecId(), member.getType());
-        }
-
-        return tmp;
     }
 
     @Override
@@ -139,14 +252,27 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
     {
         if (engine.isSimulation())
         {
-            useSimList = (engine.isInCampaignSim() && !SimSettings.IS_SSP_ENABLED);
-            Global.getLogger(SimCombatPlugin.class).log(Level.INFO,
-                    "Using sim_opponents.csv: " + !useSimList);
+            // Determine whether to use the custom simlist or vanilla behavior
+            final boolean useUnlockedList = (engine.isInCampaignSim()
+                    && !SimSettings.USE_VANILLA_SIM_LIST);
+            Log.info("Using sim_opponents.csv: " + !useUnlockedList);
 
-            playerShips = getReservesMap(FleetSide.PLAYER);
-            enemyShips = (useSimList ? SimMaster.getAllKnownShipsActual()
-                    : getReservesMap(FleetSide.ENEMY));
-            createShipList(FleetSide.ENEMY, enemyShips);
+            // TODO: Can move addPlugin() calls here after 0.7a is released
+            if (SimSettings.CLEAN_UP_HULKS)
+            {
+                addHulkCleaner = true;
+            }
+            if (SimSettings.INFINITE_CR)
+            {
+                addInfiniteCR = true;
+            }
+            if (SimSettings.HEAL_ON_VICTORY)
+            {
+                addHealPlugin = true;
+            }
+
+            // Determine what ships will be replenished for each side
+            generateReserveLists(useUnlockedList);
             needsRecheck = false;
         }
     }
@@ -156,6 +282,18 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
         @Override
         public int compare(FleetMemberAPI o1, FleetMemberAPI o2)
         {
+            // Hulls go at the end of the list
+            final boolean isO1Hull = o1.getVariant().isEmptyHullVariant(),
+                    isO2Hull = o2.getVariant().isEmptyHullVariant();
+            if (isO1Hull && !isO2Hull)
+            {
+                return 1;
+            }
+            else if (isO2Hull && !isO1Hull)
+            {
+                return -1;
+            }
+
             // Sort ships of same hull size by their name
             if (o1.getHullSpec().getHullSize() == o2.getHullSpec().getHullSize())
             {

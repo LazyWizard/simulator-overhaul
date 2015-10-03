@@ -11,12 +11,13 @@ import com.fs.starfarer.api.campaign.EngagementResultForFleetAPI;
 import com.fs.starfarer.api.combat.DeployedFleetMemberAPI;
 import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
-import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
 class SimCampaignEventListener extends BaseCampaignEventListener implements EveryFrameScript
 {
+    private static final Logger Log = Global.getLogger(SimCampaignEventListener.class);
     private static final float TIME_BETWEEN_REPORT_CHECKS = .25f;
     private final List<String> newShips, newWings;
     private float timeUntilReportCheck = TIME_BETWEEN_REPORT_CHECKS;
@@ -30,8 +31,7 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
 
     private static boolean wasFullyDestroyed(EngagementResultForFleetAPI fleet)
     {
-        Global.getLogger(SimCampaignEventListener.class).log(Level.DEBUG,
-                "Reserves size: " + fleet.getReserves().size()
+        Log.debug("Reserves size: " + fleet.getReserves().size()
                 + "\nDeployed size: " + fleet.getDeployed().size()
                 + "\nRetreated size: " + fleet.getRetreated().size()
                 + "\nIs valid: " + fleet.getFleet().isValidPlayerFleet());
@@ -57,7 +57,8 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
                 return;
             }
         }
-        // Don't include battles fough by second in command
+
+        // Don't include battles fought by second in command
         if (result.getWinnerResult().getAllEverDeployedCopy() == null
                 || result.getLoserResult().getAllEverDeployedCopy() == null)
         {

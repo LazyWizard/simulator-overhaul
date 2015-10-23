@@ -1,3 +1,8 @@
+ 1.1b (October 23, 2015)
+=========================
+Fixed missing variant crash after using F8 in devmode
+ - Ships will still be missing from the list after using F8, just doesn't crash
+
  1.1 (October 03, 2015)
 ========================
 Rewrite of reserve respawning logic to be much more efficient

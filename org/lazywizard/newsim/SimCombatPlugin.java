@@ -67,7 +67,7 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
         toAdd.getCrewComposition().addRegular(toAdd.getNeededCrew());
         toAdd.getRepairTracker().setCR(SimSettings.STARTING_CR);
         toAdd.getStats().getMaxCombatReadiness().modifyFlat("sim_startingcr",
-                (SimSettings.STARTING_CR - .6f));
+                (SimSettings.STARTING_CR - toAdd.getRepairTracker().getMaxCR()));
         toAdd.setOwner(side.ordinal());
         return toAdd;
     }
@@ -131,10 +131,17 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
 
             for (String hull : hulls)
             {
-                final FleetMemberAPI toAdd = createFleetMember(hull,
-                        FleetMemberType.SHIP, FleetSide.ENEMY);
-                toAdd.setShipName("SIM Hull");
-                enemyShips.add(toAdd);
+                try
+                {
+                    final FleetMemberAPI toAdd = createFleetMember(hull,
+                            FleetMemberType.SHIP, FleetSide.ENEMY);
+                    toAdd.setShipName("SIM Hull");
+                    enemyShips.add(toAdd);
+                }
+                catch (Exception ex)
+                {
+                    Log.error("No hull variant found for \"" + hull + "\"!");
+                }
             }
         }
 
@@ -163,24 +170,42 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                 // Fighter wings are simple
                 if (oldShip.isFighterWing())
                 {
-                    final FleetMemberAPI newShip = createFleetMember(
-                            oldShip.getSpecId(), oldShip.getType(), side);
-                    reserves.remove(oldShip);
-                    reserves.add(newShip);
-                    fm.addToReserves(newShip);
+                    try
+                    {
+                        final FleetMemberAPI newShip = createFleetMember(
+                                oldShip.getSpecId(), oldShip.getType(), side);
+                        reserves.remove(oldShip);
+                        reserves.add(newShip);
+                        fm.addToReserves(newShip);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.error("Failed to recreate wing \"" + oldShip.getSpecId()
+                                + "\", wing not found!");
+                        reserves.remove(oldShip);
+                    }
                 }
                 // Ships are more hacky, have to work around unsaved variants
                 else
                 {
-                    final FleetMemberAPI newShip = createFleetMember(
-                            oldShip.getHullId() + "_Hull", oldShip.getType(), side);
-                    newShip.setCaptain(oldShip.getCaptain());
-                    newShip.setVariant(oldShip.getVariant(), false, true);
-                    newShip.setShipName(oldShip.getShipName());
-                    newShip.setStatUpdateNeeded(false);
-                    reserves.remove(oldShip);
-                    reserves.add(newShip);
-                    fm.addToReserves(newShip);
+                    try
+                    {
+                        final FleetMemberAPI newShip = createFleetMember(
+                                oldShip.getHullId() + "_Hull", oldShip.getType(), side);
+                        newShip.setCaptain(oldShip.getCaptain());
+                        newShip.setVariant(oldShip.getVariant(), false, true);
+                        newShip.setShipName(oldShip.getShipName());
+                        newShip.setStatUpdateNeeded(false);
+                        reserves.remove(oldShip);
+                        reserves.add(newShip);
+                        fm.addToReserves(newShip);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.error("Failed to recreate ship \"" + oldShip.getHullId()
+                                + "_Hull\", variant not found!");
+                        reserves.remove(oldShip);
+                    }
                 }
             }
 

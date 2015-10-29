@@ -1,4 +1,4 @@
-package org.lazywizard.newsim;
+package org.lazywizard.newsim.plugins;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -13,7 +13,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import org.apache.log4j.Logger;
 
 // Cleans up hulks after they've been on the battle map for a while.
-class HulkCleanerPlugin extends BaseEveryFrameCombatPlugin
+public class HulkCleanerPlugin extends BaseEveryFrameCombatPlugin
 {
     private static final Logger Log = Logger.getLogger(HulkCleanerPlugin.class);
     private static final float TIME_BETWEEN_CHECKS = 1f;

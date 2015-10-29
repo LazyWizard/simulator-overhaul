@@ -12,7 +12,7 @@ public class SimModPlugin extends BaseModPlugin
     }
 
     @Override
-    public void onGameLoad()
+    public void onGameLoad(boolean newGame)
     {
         // Doesn't function properly with Starsector+ randomized variants
         if (SimSettings.USE_VANILLA_SIM_LIST)
@@ -23,6 +23,5 @@ public class SimModPlugin extends BaseModPlugin
         final SimCampaignEventListener listener = new SimCampaignEventListener();
         Global.getSector().addTransientListener(listener);
         Global.getSector().addTransientScript(listener);
-        SimMaster.checkLegacy(); // TODO: Remove after next patch
     }
 }

@@ -1,4 +1,4 @@
-package org.lazywizard.newsim;
+package org.lazywizard.newsim.plugins;
 
 import java.util.List;
 import com.fs.starfarer.api.Global;
@@ -12,7 +12,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.mission.FleetSide;
 import org.apache.log4j.Logger;
 
-class HealOnVictoryPlugin extends BaseEveryFrameCombatPlugin
+public class HealOnVictoryPlugin extends BaseEveryFrameCombatPlugin
 {
     private static final Logger Log = Logger.getLogger(HealOnVictoryPlugin.class);
     private static final float TIME_BETWEEN_CHECKS = 5f;

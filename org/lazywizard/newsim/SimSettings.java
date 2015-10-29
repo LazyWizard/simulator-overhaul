@@ -6,6 +6,9 @@ import org.apache.log4j.Level;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.lazywizard.lazylib.ModUtils;
+import org.lazywizard.newsim.plugins.HealOnVictoryPlugin;
+import org.lazywizard.newsim.plugins.HulkCleanerPlugin;
+import org.lazywizard.newsim.plugins.InfiniteCRPlugin;
 
 class SimSettings
 {

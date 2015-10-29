@@ -17,6 +17,9 @@ import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.mission.FleetSide;
 import org.apache.log4j.Logger;
+import org.lazywizard.newsim.plugins.HealOnVictoryPlugin;
+import org.lazywizard.newsim.plugins.HulkCleanerPlugin;
+import org.lazywizard.newsim.plugins.InfiniteCRPlugin;
 
 // TODO: Ensure respawned allies have the same stats/skill effects as the original
 public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
@@ -25,8 +28,7 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
     // TODO: Change which Comparator is used to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
     private final Set<FleetMemberAPI> playerShips = new HashSet<>(), enemyShips = new HashSet<>();
-    private boolean needsRecheck = false, addHulkCleaner = false,
-            addHealPlugin = false, addInfiniteCR = false;
+    private boolean needsRecheck = false;
 
     // Awkward utility method since we don't have direct access to reserves list
     private static void sortReserves(FleetSide side)
@@ -226,27 +228,6 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                 return;
             }
 
-            // TODO: TEMPORARY UNTIL 0.7a
-            if (addHulkCleaner)
-            {
-                addHulkCleaner = false;
-                engine.addPlugin(new HulkCleanerPlugin());
-            }
-
-            // TODO: TEMPORARY UNTIL 0.7a
-            if (addInfiniteCR)
-            {
-                addInfiniteCR = false;
-                engine.addPlugin(new InfiniteCRPlugin());
-            }
-
-            // TODO: TEMPORARY UNTIL 0.7a
-            if (addHealPlugin)
-            {
-                addHealPlugin = false;
-                engine.addPlugin(new HealOnVictoryPlugin());
-            }
-
             // Check if either fleet needs reserves respawned
             if (needsRecheck)
             {
@@ -282,18 +263,18 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
                     && !SimSettings.USE_VANILLA_SIM_LIST);
             Log.info("Using sim_opponents.csv: " + !useUnlockedList);
 
-            // TODO: Can move addPlugin() calls here after 0.7a is released
+            // Add sub-plugins if their options are enabled
             if (SimSettings.CLEAN_UP_HULKS)
             {
-                addHulkCleaner = true;
+                engine.addPlugin(new HulkCleanerPlugin());
             }
             if (SimSettings.INFINITE_CR)
             {
-                addInfiniteCR = true;
+                engine.addPlugin(new InfiniteCRPlugin());
             }
             if (SimSettings.HEAL_ON_VICTORY)
             {
-                addHealPlugin = true;
+                engine.addPlugin(new HealOnVictoryPlugin());
             }
 
             // Determine what ships will be replenished for each side

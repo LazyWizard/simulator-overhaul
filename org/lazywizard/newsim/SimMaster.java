@@ -3,7 +3,6 @@ package org.lazywizard.newsim;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
@@ -19,8 +18,6 @@ public class SimMaster
     private static final String STARTING_OPPONENTS_CSV
             = "data/config/simulator/starting_sim_opponents.csv";
     private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_opponents";
-    private static final String LEGACY_SHIP_PDATA_ID = "lw_ASIRB_knownships";
-    private static final String LEGACY_WING_PDATA_ID = "lw_ASIRB_knownwings";
 
     public static Map<String, FleetMemberType> getAllKnownShips()
     {
@@ -55,66 +52,6 @@ public class SimMaster
                 ? FleetMemberType.FIGHTER_WING : FleetMemberType.SHIP);
         Log.debug("Attempting to add " + type + " " + id + " to known ships");
         return (getAllKnownShipsActual().put(id, type) == null);
-    }
-
-    // TODO: Remove this after the next compatibility-breaking SS update
-    static void checkLegacy()
-    {
-        // Sanity check, make sure we're actually in the campaign
-        final SectorAPI sector = Global.getSector();
-        if (sector == null)
-        {
-            return;
-        }
-
-        // This should never trip, but just in case
-        final Map<String, Object> persistentData = sector.getPersistentData();
-        if (persistentData == null)
-        {
-            return;
-        }
-
-        final Map<String, FleetMemberType> toTransfer = new LinkedHashMap<>();
-
-        // Add old ships to simulator data
-        if (persistentData.containsKey(LEGACY_SHIP_PDATA_ID))
-        {
-            for (String id : (Set<String>) persistentData.get(LEGACY_SHIP_PDATA_ID))
-            {
-                toTransfer.put(id, FleetMemberType.SHIP);
-            }
-
-            persistentData.remove(LEGACY_SHIP_PDATA_ID);
-        }
-
-        // Add old wings to simulator data
-        if (persistentData.containsKey(LEGACY_WING_PDATA_ID))
-        {
-            for (String id : (Set<String>) persistentData.get(LEGACY_WING_PDATA_ID))
-            {
-                toTransfer.put(id, FleetMemberType.FIGHTER_WING);
-            }
-
-            persistentData.remove(LEGACY_WING_PDATA_ID);
-        }
-
-        // Register legacy simulator data with the new system
-        if (!toTransfer.isEmpty())
-        {
-            final Map<String, FleetMemberType> known = getAllKnownShipsActual();
-            for (Map.Entry<String, FleetMemberType> entry : toTransfer.entrySet())
-            {
-                Log.info("Moving legacy ship " + entry.getKey() + " to new system");
-                known.put(entry.getKey(), entry.getValue());
-            }
-
-            // Notify player of transferred data
-            if (SimSettings.SHOW_UNLOCKED_OPPONENTS)
-            {
-                Global.getSector().getCampaignUI().addMessage(
-                        "Combat simulator hardware upgrade complete");
-            }
-        }
     }
 
     static Map<String, FleetMemberType> getAllKnownShipsActual()

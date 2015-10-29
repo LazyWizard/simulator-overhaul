@@ -1,4 +1,4 @@
-package org.lazywizard.newsim;
+package org.lazywizard.newsim.plugins;
 
 import java.util.List;
 import com.fs.starfarer.api.Global;
@@ -8,7 +8,7 @@ import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.input.InputEventAPI;
 import org.apache.log4j.Logger;
 
-class InfiniteCRPlugin extends BaseEveryFrameCombatPlugin
+public class InfiniteCRPlugin extends BaseEveryFrameCombatPlugin
 {
     private static final Logger Log = Logger.getLogger(InfiniteCRPlugin.class);
     private static final float TIME_BETWEEN_CHECKS = 3f;

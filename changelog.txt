@@ -1,3 +1,11 @@
+ 1.1c (November XX, 2015)
+==========================
+Updated to be compatible with Starsector 0.7a
+Fixed issues with reserves not regenerating after using F8 in devmode
+Changes to SimMaster:
+ - Added getDefaultOpponents(), returns starting sim list
+ - Added resetSimList(), resets list to only include default opponents
+
  1.1b (October 23, 2015)
 =========================
 Fixed missing variant crash after using F8 in devmode

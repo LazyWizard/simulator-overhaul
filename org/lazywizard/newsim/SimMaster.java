@@ -18,10 +18,11 @@ public class SimMaster
     private static final String STARTING_OPPONENTS_CSV
             = "data/config/simulator/starting_sim_opponents.csv";
     private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_opponents";
+    private static Map<String, FleetMemberType> DEFAULT_OPPONENTS = null;
 
     public static Map<String, FleetMemberType> getAllKnownShips()
     {
-        return new LinkedHashMap<>(getAllKnownShipsActual());
+        return Collections.unmodifiableMap(getAllKnownShipsActual());
     }
 
     public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
@@ -54,6 +55,43 @@ public class SimMaster
         return (getAllKnownShipsActual().put(id, type) == null);
     }
 
+    public static Map<String, FleetMemberType> getDefaultOpponents()
+    {
+        if (DEFAULT_OPPONENTS == null)
+        {
+            DEFAULT_OPPONENTS = new LinkedHashMap<>();
+
+            try
+            {
+                final JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod(
+                        "id", STARTING_OPPONENTS_CSV, "lw_asirb");
+                for (int i = 0; i < csv.length(); i++)
+                {
+                    final JSONObject row = csv.getJSONObject(i);
+                    DEFAULT_OPPONENTS.put(row.getString("id"), Enum.valueOf(
+                            FleetMemberType.class, row.getString("type")));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.error("Failed to read starting sim opponents, using hardcoded defaults!", ex);
+                DEFAULT_OPPONENTS.clear();
+                DEFAULT_OPPONENTS.put("hound_Standard", FleetMemberType.SHIP);
+                DEFAULT_OPPONENTS.put("talon_wing", FleetMemberType.FIGHTER_WING);
+            }
+        }
+
+        return Collections.unmodifiableMap(DEFAULT_OPPONENTS);
+    }
+
+    public static void resetDefaultSimList()
+    {
+        Log.debug("Creating default ship list");
+        final Map<String, FleetMemberType> known = getAllKnownShipsActual();
+        known.clear();
+        known.putAll(getDefaultOpponents());
+    }
+
     static Map<String, FleetMemberType> getAllKnownShipsActual()
     {
         // Sanity check, make sure we're actually in the campaign
@@ -75,26 +113,7 @@ public class SimMaster
         {
             Log.debug("Creating default ship list");
             final Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
-
-            try
-            {
-                final JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod(
-                        "id", STARTING_OPPONENTS_CSV, "lw_asirb");
-                for (int i = 0; i < csv.length(); i++)
-                {
-                    final JSONObject row = csv.getJSONObject(i);
-                    tmp.put(row.getString("id"), Enum.valueOf(
-                            FleetMemberType.class, row.getString("type")));
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.error("Failed to read starting sim opponents, using hardcoded defaults!", ex);
-                tmp.clear();
-                tmp.put("hound_Standard", FleetMemberType.SHIP);
-                tmp.put("talon_wing", FleetMemberType.FIGHTER_WING);
-            }
-
+            tmp.putAll(getDefaultOpponents());
             persistentData.put(KNOWN_SHIPS_PDATA_ID, tmp);
             return tmp;
         }

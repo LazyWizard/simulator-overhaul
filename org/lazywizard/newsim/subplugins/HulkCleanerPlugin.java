@@ -1,4 +1,4 @@
-package org.lazywizard.newsim.plugins;
+package org.lazywizard.newsim.subplugins;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;

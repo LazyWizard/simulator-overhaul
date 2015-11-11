@@ -1,13 +1,14 @@
 package org.lazywizard.newsim;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.BaseCampaignEventListener;
+import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
-import com.fs.starfarer.api.campaign.EngagementResultForFleetAPI;
 import com.fs.starfarer.api.combat.DeployedFleetMemberAPI;
 import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
@@ -20,6 +21,8 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
     private static final Logger Log = Global.getLogger(SimCampaignEventListener.class);
     private static final float TIME_BETWEEN_REPORT_CHECKS = .25f;
     private final List<String> newShips, newWings;
+    private String lastFleetId = null;
+    private boolean listCleared = false;
     private float timeUntilReportCheck = TIME_BETWEEN_REPORT_CHECKS;
 
     SimCampaignEventListener()
@@ -29,28 +32,20 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
         newWings = new ArrayList<>();
     }
 
-    private static boolean wasFullyDestroyed(EngagementResultForFleetAPI fleet)
+    @Override
+    public void reportFleetDespawned(CampaignFleetAPI fleet,
+            FleetDespawnReason reason,            Object param)
     {
-        Log.debug("Reserves size: " + fleet.getReserves().size()
-                + "\nDeployed size: " + fleet.getDeployed().size()
-                + "\nRetreated size: " + fleet.getRetreated().size()
-                + "\nIs valid: " + fleet.getFleet().isValidPlayerFleet());
-        return (fleet.getReserves().isEmpty() && fleet.getDeployed().isEmpty()
-                && fleet.getRetreated().isEmpty());
+        //System.out.println("Despawned: " + fleet.getNameWithFaction()
+        //        +", " + reason.name()+", isPlayer: " + fleet.isPlayerFleet());
     }
 
     @Override
     public void reportPlayerEngagement(EngagementResultAPI result)
     {
+        // TODO: Test multi-battle support once 0.7a lands
         if (!result.didPlayerWin())
         {
-            // Wipe sim list on fleet death if that option is enabled
-            if (SimSettings.WIPE_SIM_DATA_ON_PLAYER_DEATH
-                    && wasFullyDestroyed(result.getLoserResult()))
-            {
-                SimMaster.getAllKnownShipsActual().clear();
-            }
-
             // Don't remember opponents on a loss if that option is enabled
             if (SimSettings.REQUIRE_PLAYER_VICTORY_TO_UNLOCK)
             {
@@ -108,10 +103,36 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
     @Override
     public void advance(float amount)
     {
-        CampaignUIAPI ui = Global.getSector().getCampaignUI();
-        if (!SimSettings.SHOW_UNLOCKED_OPPONENTS || ui == null || ui.isShowingDialog())
+        final CampaignUIAPI ui = Global.getSector().getCampaignUI();
+        if (ui == null || ui.isShowingDialog())
         {
             return;
+        }
+
+        // Wipe sim list on fleet death if that option is enabled
+        if (SimSettings.WIPE_SIM_DATA_ON_PLAYER_DEATH)
+        {
+            final CampaignFleetAPI player = Global.getSector().getPlayerFleet();
+            if (player == null)
+            {
+                return;
+            }
+
+            final String currentId = player.getId();
+            if (lastFleetId == null)
+            {
+                lastFleetId = currentId;
+            }
+
+            if (!currentId.equals(lastFleetId))
+            {
+                newShips.clear();
+                newWings.clear();
+                SimMaster.resetDefaultSimList();
+                listCleared = true;
+                lastFleetId = currentId;
+                Log.debug("Cleared sim list due to player death");
+            }
         }
 
         // Minor optimization: only check for new ships a few times per second
@@ -120,20 +141,32 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
         {
             timeUntilReportCheck = TIME_BETWEEN_REPORT_CHECKS;
 
-            // Report new sim opponents
-            if (!newShips.isEmpty())
+            // Report simlist cleared
+            if (listCleared)
             {
-                Collections.sort(newShips);
-                MessageUtils.showMessage("New ships added to computer simulation banks:",
-                        CollectionUtils.implode(newShips), true);
-                newShips.clear();
+                ui.addMessage("All recorded combat simulator data was lost in the"
+                        + " destruction of your fleet.", Color.RED);
+                listCleared = false;
+                return;
             }
-            if (!newWings.isEmpty())
+
+            // Report new sim opponents
+            if (SimSettings.SHOW_UNLOCKED_OPPONENTS)
             {
-                Collections.sort(newWings);
-                MessageUtils.showMessage("New squadrons added to computer simulation banks:",
-                        CollectionUtils.implode(newWings), true);
-                newWings.clear();
+                if (!newShips.isEmpty())
+                {
+                    Collections.sort(newShips);
+                    MessageUtils.showMessage("New ships added to computer simulation banks:",
+                            CollectionUtils.implode(newShips), true);
+                    newShips.clear();
+                }
+                if (!newWings.isEmpty())
+                {
+                    Collections.sort(newWings);
+                    MessageUtils.showMessage("New squadrons added to computer simulation banks:",
+                            CollectionUtils.implode(newWings), true);
+                    newWings.clear();
+                }
             }
         }
     }

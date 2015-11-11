@@ -11,7 +11,7 @@ public class SimModPlugin extends BaseModPlugin
         SimSettings.reload();
     }
 
-    //@Override
+    @Override
     public void onGameLoad(boolean newGame)
     {
         // Doesn't function properly with Starsector+ randomized variants
@@ -23,11 +23,5 @@ public class SimModPlugin extends BaseModPlugin
         final SimCampaignEventListener listener = new SimCampaignEventListener();
         Global.getSector().addTransientListener(listener);
         Global.getSector().addTransientScript(listener);
-    }
-
-    // TODO: Remove after 0.7a
-    public void onGameLoad()
-    {
-        onGameLoad(false);
     }
 }

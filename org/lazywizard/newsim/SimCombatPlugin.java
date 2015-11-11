@@ -19,15 +19,11 @@ import org.lazywizard.newsim.subplugins.HealOnVictoryPlugin;
 import org.lazywizard.newsim.subplugins.HulkCleanerPlugin;
 import org.lazywizard.newsim.subplugins.InfiniteCRPlugin;
 
-// TODO: Ensure respawned allies have the same stats/skill effects as the original
 public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
 {
     private static final Logger Log = Global.getLogger(SimCombatPlugin.class);
     private final Set<FleetMemberAPI> playerShips = new HashSet<>(), enemyShips = new HashSet<>();
-    private boolean needsRecheck = false, addHulkCleaner = false,
-            addHealPlugin = false, addInfiniteCR = false;
-
-    ;
+    private boolean needsRecheck = false;
 
     private void generateReserveLists(boolean useUnlockedOpponentList)
     {
@@ -168,27 +164,6 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
         final CombatEngineAPI engine = Global.getCombatEngine();
         if (engine.isSimulation())
         {
-            // TODO: TEMPORARY UNTIL 0.7a
-            if (addHulkCleaner)
-            {
-                addHulkCleaner = false;
-                engine.addPlugin(new HulkCleanerPlugin());
-            }
-
-            // TODO: TEMPORARY UNTIL 0.7a
-            if (addInfiniteCR)
-            {
-                addInfiniteCR = false;
-                engine.addPlugin(new InfiniteCRPlugin());
-            }
-
-            // TODO: TEMPORARY UNTIL 0.7a
-            if (addHealPlugin)
-            {
-                addHealPlugin = false;
-                engine.addPlugin(new HealOnVictoryPlugin());
-            }
-
             // Only check for ship replacement after player uses picker dialog
             if (engine.isUIShowingDialog())
             {
@@ -234,15 +209,15 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
             // Add sub-plugins if their options are enabled
             if (SimSettings.CLEAN_UP_HULKS)
             {
-                addHulkCleaner = true;
+                engine.addPlugin(new HulkCleanerPlugin());
             }
             if (SimSettings.INFINITE_CR)
             {
-                addInfiniteCR = true;
+                engine.addPlugin(new InfiniteCRPlugin());
             }
             if (SimSettings.HEAL_ON_VICTORY)
             {
-                addHealPlugin = true;
+                engine.addPlugin(new HealOnVictoryPlugin());
             }
 
             // Determine what ships will be replenished for each side

@@ -31,7 +31,7 @@
     "requirePlayerVictoryToUnlock":false, # Default: false
 
     # Controls whether the entire sim list is cleared when your fleet is destroyed
-    "wipeSimDataOnPlayerDeath":true, # Default: false
+    "wipeSimDataOnPlayerDeath":false, # Default: false
 
     # Whether to use the vanilla opponent list when Starsector+ is activated
     # This is enabled by default because SS+'s randomized variants won't be

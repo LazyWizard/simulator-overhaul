@@ -1,6 +1,7 @@
- 1.1c (November XX, 2015)
-==========================
+ 1.2 (November 19, 2015)
+=========================
 Updated to be compatible with Starsector 0.7a
+Combined unlocked ships and wings into one notification (less spammy)
 Fixed issues with reserves not regenerating after using F8 in devmode
 Changes to SimMaster:
  - Added getDefaultOpponents(), returns starting sim list

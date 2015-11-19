@@ -153,18 +153,13 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
             // Report new sim opponents
             if (SimSettings.SHOW_UNLOCKED_OPPONENTS)
             {
-                if (!newShips.isEmpty())
+                if (!newShips.isEmpty() || !newWings.isEmpty())
                 {
                     Collections.sort(newShips);
-                    MessageUtils.showMessage("New ships added to computer simulation banks:",
-                            CollectionUtils.implode(newShips), true);
-                    newShips.clear();
-                }
-                if (!newWings.isEmpty())
-                {
                     Collections.sort(newWings);
-                    MessageUtils.showMessage("New squadrons added to computer simulation banks:",
-                            CollectionUtils.implode(newWings), true);
+                    MessageUtils.showMessage("New vessels added to computer simulation banks:",
+                            CollectionUtils.implode(CollectionUtils.combinedList(newShips, newWings)), true);
+                    newShips.clear();
                     newWings.clear();
                 }
             }

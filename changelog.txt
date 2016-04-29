@@ -1,3 +1,8 @@
+ 1.2b (April 28, 2016)
+=======================
+Compatibility patch for DynaSector
+Added AllSimOpponents console command, unlocks all possible simulator opponents
+
  1.2 (November 19, 2015)
 =========================
 Updated to be compatible with Starsector 0.7a

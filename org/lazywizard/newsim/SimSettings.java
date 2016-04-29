@@ -21,7 +21,8 @@ class SimSettings
 
     static
     {
-        IS_SSP_ENABLED = ModUtils.isClassPresent("data.scripts.SSPModPlugin");
+        IS_SSP_ENABLED = ModUtils.isClassPresent("data.scripts.SSPModPlugin")
+                || ModUtils.isClassPresent("data.scripts.DSModPlugin");
     }
 
     static void reload() throws IOException, JSONException

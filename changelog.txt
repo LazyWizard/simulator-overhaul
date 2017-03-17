@@ -1,3 +1,7 @@
+ 1.2c (March 16, 2017)
+=======================
+Switched version file hosting to Bitbucket
+
  1.2b (April 28, 2016)
 =======================
 Compatibility patch for DynaSector

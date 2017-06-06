@@ -1,3 +1,12 @@
+ 1.3 (June 06, 2017)
+=====================
+Updated to be compatible with Starsector 0.8.1a
+Fighter wings are no longer supported:
+ - Renamed "id" column of starting_sim_opponents.csv to "variant id"; all mods
+   that include this file should change this (and also remove any wings)
+Starting unlocked sim opponents changed to a Hound (P) and Kite (P)
+Civilian ships are sorted at the end of their respective hull size categories
+
  1.2c (March 16, 2017)
 =======================
 Switched version file hosting to Bitbucket

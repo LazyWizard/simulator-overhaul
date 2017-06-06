@@ -1,0 +1,11 @@
+{
+    "id":"lw_asirb",
+    "name":"Simulator Overhaul",
+    "author":"LazyWizard",
+    "utility":"true",
+    "version":"1.3",
+    "description":" ** REQUIRES LAZYLIB **\n\nChanges campaign simulation battles to only include variants you've owned or fought before. This mod also changes reserves so they are sorted by hull size and are replenished instantly after spawning a ship, along with several other features that can be toggled in data/config/simulator/sim_settings.json.\n\nOpponent unlocking is disabled when run alongside DynaSector, in which case vanilla sim_opponents.csv behavior will be used instead.",
+    "gameVersion":"0.8.1a",
+    "jars":["jars/lw_ASIRB.jar"],
+    "modPlugin":"org.lazywizard.newsim.SimModPlugin"
+}

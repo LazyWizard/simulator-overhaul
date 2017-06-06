@@ -1,124 +1,147 @@
 package org.lazywizard.newsim;
 
+import java.io.IOException;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
-import com.fs.starfarer.api.fleet.FleetMemberType;
-import com.fs.starfarer.api.loading.VariantSource;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
-import org.json.JSONObject;
+import org.json.JSONException;
 
 public class SimMaster
 {
-    private static final Logger Log = Global.getLogger(SimMaster.class);
     private static final String STARTING_OPPONENTS_CSV
             = "data/config/simulator/starting_sim_opponents.csv";
     private static final String KNOWN_SHIPS_PDATA_ID = "lw_simlist_opponents";
-    private static Map<String, FleetMemberType> DEFAULT_OPPONENTS = null;
+    private static Set<String> DEFAULT_OPPONENTS = null;
 
-    public static Map<String, FleetMemberType> getAllKnownShips()
+    public static Set<String> getAllKnownShips()
     {
-        return Collections.unmodifiableMap(getAllKnownShipsActual());
+        return Collections.unmodifiableSet(getAllKnownShipsActual());
     }
 
-    public static void addKnownShip(String wingOrVariantId, FleetMemberType type)
+    public static void addKnownShip(String variantId)
     {
-        Log.debug("Adding " + type + " " + wingOrVariantId + " to known ships");
-        getAllKnownShipsActual().put(wingOrVariantId, type);
+        Log.debug("Adding " + variantId + " to known ships");
+        getAllKnownShipsActual().add(variantId);
     }
 
-    public static void removeKnownShip(String wingOrVariantId)
+    public static void removeKnownShip(String variantId)
     {
-        Log.debug("Removing ship " + wingOrVariantId + " from known ships");
-        getAllKnownShipsActual().remove(wingOrVariantId);
+        Log.debug("Removing ship " + variantId + " from known ships");
+        getAllKnownShipsActual().remove(variantId);
     }
 
     static boolean checkAddOpponent(ShipAPI opponent)
     {
-        // Only add stock variants, excluding empty hulls
-        if (opponent == null || opponent.getVariant().isEmptyHullVariant()
-                || opponent.getVariant().getSource() != VariantSource.STOCK)
+        if (opponent == null)
         {
             return false;
         }
 
+        // Only add stock variants, excluding empty hulls
+        final String id = opponent.getVariant().getHullVariantId();
+        if (!SimUtils.isValidVariant(opponent.getVariant()))
+        {
+            Log.debug("Ignoring invalid ship " + id);
+            return false;
+        }
+
         // Add ship to persistent data, return true if it wasn't already known
-        final String id = (opponent.isFighter() ? opponent.getWing().getWingId()
-                : opponent.getVariant().getHullVariantId());
-        final FleetMemberType type = (opponent.isFighter()
-                ? FleetMemberType.FIGHTER_WING : FleetMemberType.SHIP);
-        Log.debug("Attempting to add " + type + " " + id + " to known ships");
-        return (getAllKnownShipsActual().put(id, type) == null);
+        if (getAllKnownShipsActual().add(id))
+        {
+            Log.debug("Added " + id + " to known ships");
+            return true;
+        }
+
+        Log.debug("Ignoring known ship " + id);
+        return false;
     }
 
-    public static Map<String, FleetMemberType> getDefaultOpponents()
+    public static Set<String> getDefaultOpponents()
     {
         if (DEFAULT_OPPONENTS == null)
         {
-            DEFAULT_OPPONENTS = new LinkedHashMap<>();
+            DEFAULT_OPPONENTS = new LinkedHashSet<>();
 
+            final JSONArray csv;
             try
             {
-                final JSONArray csv = Global.getSettings().getMergedSpreadsheetDataForMod(
-                        "id", STARTING_OPPONENTS_CSV, "lw_asirb");
-                for (int i = 0; i < csv.length(); i++)
-                {
-                    final JSONObject row = csv.getJSONObject(i);
-                    DEFAULT_OPPONENTS.put(row.getString("id"), Enum.valueOf(
-                            FleetMemberType.class, row.getString("type")));
-                }
+                csv = Global.getSettings().getMergedSpreadsheetDataForMod(
+                        "variant id", STARTING_OPPONENTS_CSV, "lw_asirb");
             }
-            catch (Exception ex)
+            catch (IOException | JSONException ex)
             {
-                Log.error("Failed to read starting sim opponents, using hardcoded defaults!", ex);
+                Log.error("Failed to read starting sim opponents. Using hardcoded defaults instead!", ex);
                 DEFAULT_OPPONENTS.clear();
-                DEFAULT_OPPONENTS.put("hound_Standard", FleetMemberType.SHIP);
-                DEFAULT_OPPONENTS.put("talon_wing", FleetMemberType.FIGHTER_WING);
+                DEFAULT_OPPONENTS.add("kite_Raider");
+                DEFAULT_OPPONENTS.add("hound_d_pirates_Standard");
+                return Collections.unmodifiableSet(DEFAULT_OPPONENTS);
+            }
+
+            for (int i = 0; i < csv.length(); i++)
+            {
+                try
+                {
+                    final String id = csv.getJSONObject(i).getString("variant id");
+                    if (id.toLowerCase().endsWith("_wing"))
+                    {
+                        Log.warn("Fighter wings are no longer accepted as sim opponents. Please remove '"
+                                + id + "' from " + STARTING_OPPONENTS_CSV + ".");
+                        continue;
+                    }
+
+                    DEFAULT_OPPONENTS.add(id);
+                }
+                catch (JSONException ex)
+                {
+                    Log.error("Failed to parse CSV row!", ex);
+                }
             }
         }
 
-        return Collections.unmodifiableMap(DEFAULT_OPPONENTS);
+        return Collections.unmodifiableSet(DEFAULT_OPPONENTS);
     }
 
     public static void resetDefaultSimList()
     {
         Log.debug("Creating default ship list");
-        final Map<String, FleetMemberType> known = getAllKnownShipsActual();
+        final Set<String> known = getAllKnownShipsActual();
         known.clear();
-        known.putAll(getDefaultOpponents());
+        known.addAll(getDefaultOpponents());
     }
 
-    static Map<String, FleetMemberType> getAllKnownShipsActual()
+    @SuppressWarnings("unchecked")
+    static Set<String> getAllKnownShipsActual()
     {
         // Sanity check, make sure we're actually in the campaign
         final SectorAPI sector = Global.getSector();
         if (sector == null)
         {
-            return Collections.<String, FleetMemberType>emptyMap();
+            return Collections.<String>emptySet();
         }
 
         // This should never trip, but just in case
         final Map<String, Object> persistentData = sector.getPersistentData();
         if (persistentData == null)
         {
-            return Collections.<String, FleetMemberType>emptyMap();
+            return Collections.<String>emptySet();
         }
 
         // If there wasn't already simlist data, fill it with starting ships
         if (!persistentData.containsKey(KNOWN_SHIPS_PDATA_ID))
         {
             Log.debug("Creating default ship list");
-            final Map<String, FleetMemberType> tmp = new LinkedHashMap<>();
-            tmp.putAll(getDefaultOpponents());
+            final Set<String> tmp = new LinkedHashSet<>();
+            tmp.addAll(getDefaultOpponents());
             persistentData.put(KNOWN_SHIPS_PDATA_ID, tmp);
             return tmp;
         }
 
-        return (Map<String, FleetMemberType>) persistentData.get(KNOWN_SHIPS_PDATA_ID);
+        return (Set<String>) persistentData.get(KNOWN_SHIPS_PDATA_ID);
     }
 
     private SimMaster()

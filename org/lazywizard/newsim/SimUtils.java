@@ -3,17 +3,19 @@ package org.lazywizard.newsim;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.combat.CombatFleetManagerAPI;
+import com.fs.starfarer.api.combat.ShipAPI.HullSize;
+import com.fs.starfarer.api.combat.ShipHullSpecAPI.ShipTypeHints;
+import com.fs.starfarer.api.combat.ShipVariantAPI;
 import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.mission.FleetSide;
-import org.apache.log4j.Logger;
 import org.lazywizard.newsim.comparators.SortByHullSize;
 
 public class SimUtils
 {
-    private static final Logger Log = Logger.getLogger(SimUtils.class);
     // TODO: Change which Comparator is used to sort opponents into a config file option
     private static final Comparator<FleetMemberAPI> comparator = new SortByHullSize();
 
@@ -52,12 +54,21 @@ public class SimUtils
         // Set the created ship's combat readiness and which side it fights for
         final FleetMemberAPI toAdd = Global.getFactory().createFleetMember(type, id);
         toAdd.setShipName("SIM " + toAdd.getVariant().getDesignation());
-        toAdd.getCrewComposition().addRegular(toAdd.getNeededCrew());
+        toAdd.getCrewComposition().addCrew(toAdd.getNeededCrew());
         toAdd.getRepairTracker().setCR(SimSettings.STARTING_CR);
         toAdd.getStats().getMaxCombatReadiness().modifyFlat("sim_startingcr",
                 (SimSettings.STARTING_CR - toAdd.getRepairTracker().getMaxCR()));
         toAdd.setOwner(side.ordinal());
         return toAdd;
+    }
+
+    public static boolean isValidVariant(ShipVariantAPI variant)
+    {
+        final Set<ShipTypeHints> hints = variant.getHullSpec().getHints();
+        return !(variant.isEmptyHullVariant() || !variant.isStockVariant()
+                || variant.getHullSize() == HullSize.FIGHTER || variant.isFighter()
+                || hints.contains(ShipTypeHints.UNBOARDABLE)
+                || hints.contains(ShipTypeHints.STATION));
     }
 
     private SimUtils()

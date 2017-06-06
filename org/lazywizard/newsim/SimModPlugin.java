@@ -14,7 +14,7 @@ public class SimModPlugin extends BaseModPlugin
     @Override
     public void onGameLoad(boolean newGame)
     {
-        // Doesn't function properly with Starsector+ randomized variants
+        // Doesn't function properly with Dynasector's randomized variants
         if (SimSettings.USE_VANILLA_SIM_LIST)
         {
             return;

@@ -67,7 +67,7 @@ public class HealOnVictoryPlugin extends BaseEveryFrameCombatPlugin
             }
         }
 
-        // TODO: Engines are not restorable in current API, recheck after 0.7a
+        // TODO: Engines are not restorable in current API
     }
 
     @Override

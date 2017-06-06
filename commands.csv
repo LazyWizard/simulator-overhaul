@@ -1,0 +1,2 @@
+command,class,tags,syntax,help
+AllSimOpponents,org.lazywizard.newsim.ASIRB,"simoverhaul,campaign",asirb (no arguments),"Unlocks all variants for use in simulator battles."

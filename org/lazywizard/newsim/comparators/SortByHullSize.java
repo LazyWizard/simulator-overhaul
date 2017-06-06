@@ -23,6 +23,16 @@ public class SortByHullSize implements Comparator<FleetMemberAPI>
             // Sort ships of same hull size by their name
             if (o1.getHullSpec().getHullSize() == o2.getHullSpec().getHullSize())
             {
+                // Sort civilians last
+                if (o1.isCivilian() && !o2.isCivilian())
+                {
+                    return 1;
+                }
+                else if (o2.isCivilian() && !o1.isCivilian())
+                {
+                    return -1;
+                }
+
                 return o1.getVariant().getFullDesignationWithHullName().compareTo(
                         o2.getVariant().getFullDesignationWithHullName());
             }

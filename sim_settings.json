@@ -1,5 +1,5 @@
 {
-    # You can ignore this setting, it's only useful to track down errors
+    # You can ignore this setting; it's only useful to track down errors
     # Valid levels: OFF, FATAL, ERROR, WARN, INFO, DEBUG, ALL
     "logLevel":"INFO", # Default: INFO
 
@@ -33,8 +33,8 @@
     # Controls whether the entire sim list is cleared when your fleet is destroyed
     "wipeSimDataOnPlayerDeath":false, # Default: false
 
-    # Whether to use the vanilla opponent list when Starsector+ is activated
-    # This is enabled by default because SS+'s randomized variants won't be
+    # Whether to use the vanilla opponent list when Dynasector is activated
+    # This is enabled by default because DS's randomized variants won't be
     # picked up by this mod, so you will rarely unlock new foes after battles
-    "useVanillaSimListWithStarsector+":true # Default: true
+    "useVanillaSimListWithDynasector":true # Default: true
 }

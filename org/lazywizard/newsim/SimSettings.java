@@ -13,7 +13,7 @@ import org.lazywizard.newsim.subplugins.InfiniteCRPlugin;
 class SimSettings
 {
     private static final String SETTINGS_FILE = "data/config/simulator/sim_settings.json";
-    private static final boolean IS_SSP_ENABLED;
+    private static final boolean IS_DS_ENABLED;
     static boolean REQUIRE_PLAYER_VICTORY_TO_UNLOCK, CLEAN_UP_HULKS,
             INFINITE_CR, HEAL_ON_VICTORY, WIPE_SIM_DATA_ON_PLAYER_DEATH,
             SHOW_UNLOCKED_OPPONENTS, INCLUDE_HULLS, USE_VANILLA_SIM_LIST;
@@ -21,8 +21,7 @@ class SimSettings
 
     static
     {
-        IS_SSP_ENABLED = ModUtils.isClassPresent("data.scripts.SSPModPlugin")
-                || ModUtils.isClassPresent("data.scripts.DSModPlugin");
+        IS_DS_ENABLED = ModUtils.isClassPresent("data.scripts.DSModPlugin");
     }
 
     static void reload() throws IOException, JSONException
@@ -37,7 +36,7 @@ class SimSettings
         WIPE_SIM_DATA_ON_PLAYER_DEATH = settings.getBoolean("wipeSimDataOnPlayerDeath");
         SHOW_UNLOCKED_OPPONENTS = settings.getBoolean("showUnlockedOpponents");
         INCLUDE_HULLS = settings.getBoolean("includeHulls");
-        USE_VANILLA_SIM_LIST = IS_SSP_ENABLED && settings.getBoolean("useVanillaSimListWithStarsector+");
+        USE_VANILLA_SIM_LIST = IS_DS_ENABLED && settings.getBoolean("useVanillaSimListWithDynasector");
 
         // Set log level for all classes
         final Level logLevel = Level.toLevel(settings.getString("logLevel"), Level.WARN);

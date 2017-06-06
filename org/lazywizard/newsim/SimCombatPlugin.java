@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.combat.BaseEveryFrameCombatPlugin;
@@ -14,14 +13,12 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.fleet.FleetMemberType;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.mission.FleetSide;
-import org.apache.log4j.Logger;
 import org.lazywizard.newsim.subplugins.HealOnVictoryPlugin;
 import org.lazywizard.newsim.subplugins.HulkCleanerPlugin;
 import org.lazywizard.newsim.subplugins.InfiniteCRPlugin;
 
 public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
 {
-    private static final Logger Log = Global.getLogger(SimCombatPlugin.class);
     private final Set<FleetMemberAPI> playerShips = new HashSet<>(), enemyShips = new HashSet<>();
     private boolean needsRecheck = false;
 
@@ -42,22 +39,20 @@ public class SimCombatPlugin extends BaseEveryFrameCombatPlugin
         // Register enemy known ship list and repopulate sim opponents with said list
         if (useUnlockedOpponentList)
         {
-            for (Iterator<Map.Entry<String, FleetMemberType>> iter
-                    = SimMaster.getAllKnownShipsActual().entrySet().iterator(); iter.hasNext();)
+            for (Iterator<String> iter = SimMaster.getAllKnownShipsActual().iterator(); iter.hasNext();)
             {
-                final Map.Entry<String, FleetMemberType> entry = iter.next();
+                final String id = iter.next();
                 try
                 {
                     final FleetMemberAPI toAdd = SimUtils.createFleetMember(
-                            entry.getKey(), entry.getValue(), FleetSide.ENEMY);
+                            id, FleetMemberType.SHIP, FleetSide.ENEMY);
                     enemyShips.add(toAdd);
                 }
                 catch (Exception ex)
                 {
-                    Log.error("Failed to instantiate ship: " + entry.getKey()
-                            + " (" + entry.getValue().name() + ")", ex);
+                    Log.error("Failed to instantiate ship: " + id, ex);
                     iter.remove();
-                    Log.info("Removed " + entry.getKey() + " from known opponents list");
+                    Log.info("Removed " + id + " from known opponents list");
                 }
             }
         }

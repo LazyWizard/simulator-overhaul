@@ -3,7 +3,9 @@ package org.lazywizard.newsim;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.BaseCampaignEventListener;
@@ -12,15 +14,13 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.combat.DeployedFleetMemberAPI;
 import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
-import org.apache.log4j.Logger;
 import org.lazywizard.lazylib.CollectionUtils;
 import org.lazywizard.lazylib.campaign.MessageUtils;
 
 class SimCampaignEventListener extends BaseCampaignEventListener implements EveryFrameScript
 {
-    private static final Logger Log = Global.getLogger(SimCampaignEventListener.class);
     private static final float TIME_BETWEEN_REPORT_CHECKS = .25f;
-    private final List<String> newShips, newWings;
+    private final Set<String> newShips;
     private String lastFleetId = null;
     private boolean listCleared = false;
     private float timeUntilReportCheck = TIME_BETWEEN_REPORT_CHECKS;
@@ -28,22 +28,13 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
     SimCampaignEventListener()
     {
         super(false);
-        newShips = new ArrayList<>();
-        newWings = new ArrayList<>();
-    }
-
-    @Override
-    public void reportFleetDespawned(CampaignFleetAPI fleet,
-            FleetDespawnReason reason,            Object param)
-    {
-        //System.out.println("Despawned: " + fleet.getNameWithFaction()
-        //        +", " + reason.name()+", isPlayer: " + fleet.isPlayerFleet());
+        newShips = new HashSet<>();
     }
 
     @Override
     public void reportPlayerEngagement(EngagementResultAPI result)
     {
-        // TODO: Test multi-battle support once 0.7a lands
+        // TODO: Test multi-battle support
         if (!result.didPlayerWin())
         {
             // Don't remember opponents on a loss if that option is enabled
@@ -76,14 +67,7 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
                 }
 
                 // Register the newly unlocked variant to be announced on the campaign map
-                if (ship.isFighter())
-                {
-                    newWings.add(ship.getVariant().getFullDesignationWithHullName());
-                }
-                else
-                {
-                    newShips.add(ship.getVariant().getFullDesignationWithHullName());
-                }
+                newShips.add(ship.getVariant().getFullDesignationWithHullName());
             }
         }
     }
@@ -127,7 +111,6 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
             if (!currentId.equals(lastFleetId))
             {
                 newShips.clear();
-                newWings.clear();
                 SimMaster.resetDefaultSimList();
                 listCleared = true;
                 lastFleetId = currentId;
@@ -153,14 +136,13 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
             // Report new sim opponents
             if (SimSettings.SHOW_UNLOCKED_OPPONENTS)
             {
-                if (!newShips.isEmpty() || !newWings.isEmpty())
+                if (!newShips.isEmpty())
                 {
-                    Collections.sort(newShips);
-                    Collections.sort(newWings);
+                    final List<String> sortedNewShips = new ArrayList<>(newShips);
+                    Collections.sort(sortedNewShips);
                     MessageUtils.showMessage("New vessels added to computer simulation banks:",
-                            CollectionUtils.implode(CollectionUtils.combinedList(newShips, newWings)), true);
+                            CollectionUtils.implode(sortedNewShips), true);
                     newShips.clear();
-                    newWings.clear();
                 }
             }
         }

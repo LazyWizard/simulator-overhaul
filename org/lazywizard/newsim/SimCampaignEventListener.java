@@ -88,7 +88,7 @@ class SimCampaignEventListener extends BaseCampaignEventListener implements Ever
     public void advance(float amount)
     {
         final CampaignUIAPI ui = Global.getSector().getCampaignUI();
-        if (ui == null || ui.isShowingDialog())
+        if (ui == null || ui.isShowingDialog() || Global.getSector().isInNewGameAdvance())
         {
             return;
         }

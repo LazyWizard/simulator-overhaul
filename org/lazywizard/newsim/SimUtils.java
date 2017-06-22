@@ -67,8 +67,8 @@ public class SimUtils
         final Set<ShipTypeHints> hints = variant.getHullSpec().getHints();
         return !(variant.isEmptyHullVariant() || !variant.isStockVariant()
                 || variant.getHullSize() == HullSize.FIGHTER || variant.isFighter()
-                || hints.contains(ShipTypeHints.UNBOARDABLE)
-                || hints.contains(ShipTypeHints.STATION));
+                || (!SimSettings.INCLUDE_HIDDEN && hints.contains(ShipTypeHints.HIDE_IN_CODEX))
+                || (!SimSettings.INCLUDE_STATIONS && hints.contains(ShipTypeHints.STATION)));
     }
 
     private SimUtils()

@@ -5,7 +5,7 @@
 
     # How much combat readiness sim opponents have, from 0.0 to 1.0
     # Also applies to replacement allies in the campaign simulator
-    "startingCR":0.6, # Default: 0.6 (equivalent to regular crew)
+    "startingCR":0.7, # Default: 0.7
 
     # Whether the player's flagship should be fully healed when all
     # enemy ships have been destroyed (also restores armor and ammo)
@@ -21,6 +21,12 @@
     # Whether to include empty hull variants at the end of the sim list for
     # all unlocked opponents, useful for damage testing/catharsis factor
     "includeHulls":false, # Default: false
+
+    # Whether to include ships such as [REDACTED] that are hidden in the codex
+    "includeHiddenInCodex":false, # Default: false
+
+    # Whether to include stations in the simlist (requires includeHidden=true)
+    "includeStations":false, # Default: false
 
     # Controls whether the game will announce newly unlocked sim
     # opponents after each battle on the campaign map
